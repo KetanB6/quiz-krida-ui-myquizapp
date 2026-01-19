@@ -1,22 +1,19 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-// 1. Import toast
 import toast, { Toaster } from 'react-hot-toast';
 
 const Form = () => {
     const [isAuth, setIsAuth] = useState(false);
     const [userName, setUserName] = useState("");
+    
+    // Loader States
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [isSigningUp, setIsSigningUp] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const [signupData, setSignupData] = useState({
-        name: "",
-        email: "",
-        password: "",
-    });
-    const [loginData, setLoginData] = useState({
-        email: "",
-        password: "",
-    });
+    const [signupData, setSignupData] = useState({ name: "", email: "", password: "" });
+    const [loginData, setLoginData] = useState({ email: "", password: "" });
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -34,68 +31,38 @@ const Form = () => {
         }
     }, []);
 
-    const handleSignupChange = (e) => {
-        setSignupData({
-            ...signupData,
-            [e.target.name]: e.target.value,
-        });
-    };
-
-    const handleLoginChange = (e) => {
-        setLoginData({
-            ...loginData,
-            [e.target.name]: e.target.value,
-        });
-    };
-
     const handleSignupSubmit = async (e) => {
         e.preventDefault();
+        setIsSigningUp(true); // Start Loader
         try {
             const res = await fetch("/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...signupData }),
             });
-            let data;
-            try {
-                data = await res.json();
-            } catch (err) {
-                toast.error("Invalid server response");
-                console.error(err);
-                return;
-            }
+            const data = await res.json();
             if (!res.ok) {
-                // 2. Replace alert with toast
                 toast.error(data.message || "Signup failed");
                 return;
             }
             toast.success("Signup successful 🎉 Please log in.");
         } catch (error) {
-            console.error(error);
             toast.error("Server error");
+        } finally {
+            setIsSigningUp(false); // Stop Loader
         }
     };
 
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
+        setIsLoggingIn(true); // Start Loader
         try {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(loginData),
             });
-            const contentType = res.headers.get("content-type");
-            let data = {};
-
-            if (contentType && contentType.includes("application/json")) {
-                data = await res.json();
-            } else {
-                // If it's not JSON, it's likely an HTML error page (404 or 500)
-                const textError = await res.text();
-                console.error("Server returned non-JSON:", textError);
-                toast.error("Server configuration error. Check console.");
-                return;
-            }
+            const data = await res.json();
 
             if (!res.ok) {
                 toast.error(data.message || "Login failed");
@@ -108,54 +75,47 @@ const Form = () => {
             setIsAuth(true);
             setUserName(data.user?.name || "User");
             toast.success("Login successful 🎉");
-
-            // Optional delay before redirect to let user see toast
-            setTimeout(() => {
-                window.location.href = "/";
-            }, 1000);
-
+            setTimeout(() => { window.location.href = "/"; }, 1000);
         } catch (error) {
-            console.error(error);
             toast.error("Server error");
+        } finally {
+            setIsLoggingIn(false); // Stop Loader
         }
     };
 
     const handleLogout = () => {
+        setIsLoggingOut(true); // Start Loader
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        setIsAuth(false);
-        setLoginData({ email: "", password: "" });
         toast.success("Logged out successfully");
 
         setTimeout(() => {
+            setIsAuth(false);
+            setIsLoggingOut(false); // Stop Loader
             window.location.href = "/";
         }, 1000);
     };
 
-    const handleDashboardClick = () => {
-        toast("Navigating to Dashboard...", { icon: '🚀' });
-    };
-
     return (
         <StyledWrapper>
-            {/* 3. Add the Toaster container */}
             <Toaster position="top-center" reverseOrder={false} />
-
             <div className="wrapper">
                 {isAuth ? (
                     <div className="profile-card">
                         <div className="profile-header">
-                            <div className="avatar">
-                                {userName.charAt(0).toUpperCase()}
-                            </div>
+                            <div className="avatar">{userName.charAt(0).toUpperCase()}</div>
                             <h2 className="title">Hello, {userName}!</h2>
                         </div>
                         <div className="profile-actions">
-                            <button className="flip-card__btn" onClick={handleDashboardClick}>
+                            <button className="flip-card__btn" onClick={() => toast("Opening Dashboard...")}>
                                 Dashboard
                             </button>
-                            <button className="flip-card__btn logout-btn" onClick={handleLogout}>
-                                Logout
+                            <button 
+                                className="flip-card__btn logout-btn" 
+                                onClick={handleLogout}
+                                disabled={isLoggingOut}
+                            >
+                                {isLoggingOut ? "Ending..." : "Logout"}
                             </button>
                         </div>
                     </div>
@@ -169,20 +129,27 @@ const Form = () => {
                                 <div className="flip-card__front">
                                     <div className="title">Log in</div>
                                     <form onSubmit={handleLoginSubmit} className="flip-card__form">
-                                        <input type="email" placeholder="Email" name="email" className="flip-card__input" value={loginData.email}
-                                            onChange={handleLoginChange} />
-                                        <input type="password" placeholder="Password" name="password" className="flip-card__input" value={loginData.password}
-                                            onChange={handleLoginChange} />
-                                        <button className="flip-card__btn">Let's go!</button>
+                                        <input type="email" placeholder="Email" name="email" className="flip-card__input" required
+                                            onChange={(e) => setLoginData({...loginData, email: e.target.value})} />
+                                        <input type="password" placeholder="Password" name="password" className="flip-card__input" required
+                                            onChange={(e) => setLoginData({...loginData, password: e.target.value})} />
+                                        <button className="flip-card__btn" disabled={isLoggingIn}>
+                                            {isLoggingIn ? <span className="loader">WAIT...</span> : "Let's go!"}
+                                        </button>
                                     </form>
                                 </div>
                                 <div className="flip-card__back">
                                     <div className="title">Sign up</div>
                                     <form onSubmit={handleSignupSubmit} className="flip-card__form">
-                                        <input type="text" placeholder="Name" name='name' className="flip-card__input" value={signupData.name} onChange={handleSignupChange} />
-                                        <input type="email" placeholder="Email" name="email" className="flip-card__input" value={signupData.email} onChange={handleSignupChange} />
-                                        <input type="password" placeholder="Password" name="password" className="flip-card__input" value={signupData.password} onChange={handleSignupChange} />
-                                        <button type='submit' className="flip-card__btn">Confirm!</button>
+                                        <input type="text" placeholder="Name" name='name' className="flip-card__input" required
+                                            onChange={(e) => setSignupData({...signupData, name: e.target.value})} />
+                                        <input type="email" placeholder="Email" name="email" className="flip-card__input" required
+                                            onChange={(e) => setSignupData({...signupData, email: e.target.value})} />
+                                        <input type="password" placeholder="Password" name="password" className="flip-card__input" required
+                                            onChange={(e) => setSignupData({...signupData, password: e.target.value})} />
+                                        <button type='submit' className="flip-card__btn" disabled={isSigningUp}>
+                                            {isSigningUp ? <span className="loader">WAIT...</span> : "Confirm!"}
+                                        </button>
                                     </form>
                                 </div>
                             </div>
@@ -193,7 +160,6 @@ const Form = () => {
         </StyledWrapper>
     );
 }
-
 const StyledWrapper = styled.div`
   /* (Your existing CSS remains exactly the same) */
   .wrapper {
