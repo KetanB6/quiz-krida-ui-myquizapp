@@ -1,11 +1,9 @@
-"use client"
 import React from 'react'
-import LandingPage from './component/LandingPage'
+
 const page = () => {
   return (
     <div>
-      
-      <LandingPage/>
+      this ios dashboard page
     </div>
   )
 }

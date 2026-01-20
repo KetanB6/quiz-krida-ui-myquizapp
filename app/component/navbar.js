@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Input from "./InputQuizJoin";
 import Button from "./loginbutton"; // Your existing Login Modal trigger
 import ButtonHome from "./homeButton";
 import Link from "next/link";
+import Logo from "./Logo";
 import Profileee from "./profileButton";
 
 const Navbar = () => {
@@ -20,38 +20,26 @@ const Navbar = () => {
   // Handle Navigation to Profile (Login Page)
   const handleProfileClick = () => {
     // Redirects to /login where the 'Form' component handles the Dashboard/Logout view
-    window.location.href = "/login"; 
+    window.location.href = "/login";
   };
 
   return (
     <nav className="sticky top-0 z-50 mb-7 backdrop-blur-md shadow-md ">
       <div className="mx-auto px-4">
-        
-        {/* DESKTOP GRID */}
-        <div className="hidden md:grid h-16 grid-cols-3 items-center">
-          
-          {/* LEFT: Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = '/'}>
-            <img
-              src="quiz.jpg"
-              alt="Quiz Logo"
-              className="w-10 h-10 rounded-full hover:rotate-12 transition-transform duration-300"
-            />
-            <span className="text-xl font-extrabold text-gray-600 tracking-wide">
-              Quiz<span className="text-blue-600">Master</span>
-            </span>
-          </div>
 
-          {/* CENTER: Input */}
-          <div className="flex justify-center">
-            <Input />
-          </div>
+        {/* DESKTOP GRID */}
+        <div className="hidden justify-between md:grid h-16 grid-cols-2 items-center">
+
+          {/* LEFT: Logo */}
+          <Logo />
+
+
 
           {/* RIGHT: Home + Auth Buttons */}
           <div className="flex justify-end items-center gap-6">
             {/* Home Button (Always Visible) */}
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="text-gray-600 font-semibold hover:text-blue-600 transition-colors duration-200"
             >
               <ButtonHome />
@@ -59,11 +47,11 @@ const Navbar = () => {
 
             {isAuth ? (
               // --- LOGGED IN VIEW: Profile Button ---
-              <button 
+              <button
                 onClick={handleProfileClick}
                 className="px-5 py-2  text-white font-bold rounded-lg  transition-all shadow-md hover:shadow-lg"
               >
-               <Profileee/>
+                <Profileee />
               </button>
             ) : (
               // --- LOGGED OUT VIEW: Login Modal Button ---
@@ -74,36 +62,50 @@ const Navbar = () => {
 
         {/* MOBILE FLEX */}
         <div className="flex md:hidden h-16 items-center justify-between">
-          
+
           {/* LEFT: Logo */}
-          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.href = '/'}>
-            <img
-              src="quiz.jpg"
-              alt="Quiz Logo"
-              className="w-10 h-10 rounded-full transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:-rotate-12"
-            />
-            <span className="text-xl font-extrabold text-gray-600 tracking-wide">
-              Quiz<span className="text-blue-600">M</span>
-            </span>
+          <div className="flex   items-center gap-3 group cursor-pointer" onClick={() => window.location.href = '/'}>
+
+            <svg width="160" height="80" viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="grad-blue-black" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#2563eb" />
+                  <stop offset="50%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#e0f2fe" />
+                </linearGradient>
+              </defs>
+
+              <text
+                x="10"
+                y="55"
+                fontSize="42"
+                fontWeight="800"
+                fill="url(#grad-blue-black)"
+                fontFamily="Poppins, sans-serif"
+              >
+                Quizक्रिडा
+              </text>
+            </svg>
+
+
+
           </div>
 
           {/* RIGHT: Actions */}
           <div className="flex items-center gap-3">
-             <Link href="/" className="text-gray-600  font-medium text-sm">
-                <ButtonHome />
-             </Link>
 
-             {isAuth ? (
-                // --- Mobile Profile Button ---
-                <button 
-                  onClick={handleProfileClick}
-                  className="px-3 py-1.5  text-white font-bold rounded-md text-xs"
-                >
-                  <Profileee/>
-                </button>
-             ) : (
-                <Button />
-             )}
+
+            {isAuth ? (
+              // --- Mobile Profile Button ---
+              <button
+                onClick={handleProfileClick}
+                className="px-3 py-1.5  text-white font-bold rounded-md text-xs"
+              >
+                <Profileee />
+              </button>
+            ) : (
+              <Button />
+            )}
           </div>
         </div>
       </div>
