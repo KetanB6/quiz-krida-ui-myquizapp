@@ -2,45 +2,46 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Play, PlusCircle, Sparkles } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 const QuickActions = () => {
-  const actions = [
-    {
-      title: "Play Quiz",
-      desc: "Enter a code and test your knowledge",
-      icon: <Play size={32} />,
-      color: "#2d8cf0", // Blue
-      onClick: () => toast.success("Opening Game Lobby...")
-    },
-    {
-      title: "Create Quiz",
-      desc: "Build your own custom quiz manually",
-      icon: <PlusCircle size={32} />,
-      color: "#2ecc71", // Green
-      onClick: () => toast.success("Redirecting to Creator...")
-    },
-    {
-      title: "Quiz by AI",
-      desc: "Generate a quiz from a topic or URL",
-      icon: <Sparkles size={32} />,
-      color: "#9b59b6", // Purple
-      onClick: () => toast.success("AI Assistant waking up...")
-    }
-  ];
+    const router = useRouter();
+    const actions = [
+        {
+            title: "Play Quiz",
+            desc: "Enter a code and test your knowledge",
+            icon: <Play size={32} />,
+            color: "#2d8cf0", // Blue
+            onClick: () => router.push('/play')
+        },
+        {
+            title: "Create Quiz",
+            desc: "Build your own custom quiz manually",
+            icon: <PlusCircle size={32} />,
+            color: "#2ecc71", // Green
+            onClick: () => router.push('/create')
+        },
+        {
+            title: "Quiz by AI",
+            desc: "Generate a quiz from a topic or URL",
+            icon: <Sparkles size={32} />,
+            color: "#9b59b6", // Purple
+            onClick: () => router.push('/generate-ai')
+        }
+    ];
 
-  return (
-    <Container>
-      {actions.map((action, index) => (
-        <Card key={index} color={action.color} onClick={action.onClick}>
-          <div className="icon-box">{action.icon}</div>
-          <h3>{action.title}</h3>
-          <p>{action.desc}</p>
-          <button className="action-btn">Go!</button>
-        </Card>
-      ))}
-    </Container>
-  );
+    return (
+        <Container>
+            {actions.map((action, index) => (
+                <Card key={index} color={action.color} onClick={action.onClick}>
+                    <div className="icon-box">{action.icon}</div>
+                    <h3>{action.title}</h3>
+                    <p>{action.desc}</p>
+                    <button className="action-btn cursor-pointer">Go!</button>
+                </Card>
+            ))}
+        </Container>
+    );
 };
 
 const Container = styled.div`
