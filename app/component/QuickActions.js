@@ -11,14 +11,14 @@ const QuickActions = () => {
             title: "Play Quiz",
             desc: "Enter a code and test your knowledge",
             icon: <Play size={32} />,
-            color: "#2d8cf0", // Blue
+            color: "#6366f1", // Indigo (from your requested gradient start)
             onClick: () => router.push('/play')
         },
         {
             title: "Create Quiz",
             desc: "Build your own custom quiz manually",
             icon: <PlusCircle size={32} />,
-            color: "#2ecc71", // Green
+            color: "#2d8cf0", // Blue
             onClick: () => router.push('/create')
         },
         {
@@ -55,7 +55,6 @@ const Container = styled.div`
 `;
 
 const Card = styled.div`
-  
   border: 2px solid #fefefe;
   box-shadow: 6px 6px 0px #fefefe;
   border-radius: 10px;
@@ -112,11 +111,13 @@ const Card = styled.div`
 
   &:active {
     transform: translate(4px, 4px);
-    box-shadow: 0px 0px 0px;
+    box-shadow: 2px 2px 0px ${props => props.color};
+    border-color: ${props => props.color};
   }
 
   &:active .action-btn {
     box-shadow: 0px 0px 0px;
+    transform: translate(2px, 2px);
   }
 `;
 
