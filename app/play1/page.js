@@ -22,21 +22,6 @@ const PlayQuiz = () => {
         quizId: ''
     });
 
-    // --- QR Scanner Auto-fill Logic ---
-    useEffect(() => {
-        // Look for ?id= or ?quizId= in the URL
-        const params = new URLSearchParams(window.location.search);
-        const idFromUrl = params.get('id') || params.get('quizId');
-        
-        if (idFromUrl) {
-            setJoinData(prev => ({
-                ...prev,
-                quizId: idFromUrl
-            }));
-            toast.success("Quiz ID captured from link!");
-        }
-    }, []);
-
     // --- Timer Logic ---
     useEffect(() => {
         if (!quizData || isSubmitted) return;
@@ -224,6 +209,7 @@ const PlayQuiz = () => {
 
                     <QuestionGrid>
                         {quizData.questions.map((q, idx) => {
+                            // Only show current question if not submitted, or show all if submitted
                             if (!isSubmitted && idx !== currentQuestionIdx) return null;
 
                             return (
@@ -278,7 +264,7 @@ const PlayQuiz = () => {
     );
 };
 
-// --- Styles remain exactly as you provided ---
+// --- New Timer Components ---
 const TimerBarContainer = styled.div`
     width: 100%;
     height: 6px;
@@ -295,6 +281,7 @@ const TimerBarFill = styled.div`
     transition: width 1s linear;
 `;
 
+// --- Existing Styled Components ---
 const spin = keyframes` from { transform: rotate(0deg); } to { transform: rotate(360deg); } `;
 const springUp = keyframes` from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } `;
 
@@ -308,7 +295,10 @@ const PageContainer = styled.div`
     background: transparent; 
     position: relative; 
     overflow-x: hidden;
-    @media (max-width: 768px) { padding: 20px 12px; }
+    
+    @media (max-width: 768px) {
+        padding: 20px 12px;
+    }
 `;
 
 const GlassCard = styled.div`
@@ -324,12 +314,29 @@ const GlassCard = styled.div`
     animation: ${springUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
     height: fit-content;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    @media (max-width: 480px) { padding: 24px; border-radius: 24px; }
+
+    @media (max-width: 480px) {
+        padding: 24px;
+        border-radius: 24px;
+    }
 `;
 
 const Header = styled.div`
-    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 15px; margin-bottom: 35px;
-    .icon-badge { width: 60px; height: 60px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 30px rgba(79, 70, 229, 0.4); }
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px; 
+    margin-bottom: 35px;
+    
+    .icon-badge { 
+        width: 60px; height: 60px; 
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+        border-radius: 20px; 
+        display: flex; align-items: center; justify-content: center; 
+        color: white; 
+        box-shadow: 0 8px 30px rgba(79, 70, 229, 0.4); 
+    }
     h2 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
     p { margin: 0; color: #a1a1aa; font-size: 0.95rem; }
 `;
@@ -339,11 +346,29 @@ const FormGrid = styled.div` display: flex; flex-direction: column; gap: 20px; `
 const InputGroup = styled.div`
     display: flex; flex-direction: column; gap: 8px;
     label { color: #a1a1aa; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
-    input { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 16px; color: #fff; font-size: 1rem; transition: all 0.2s; &:focus { outline: none; border-color: #4f46e5; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); } }
+    input { 
+        background: rgba(0, 0, 0, 0.2); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border-radius: 14px; 
+        padding: 16px; 
+        color: #fff; 
+        font-size: 1rem; 
+        transition: all 0.2s;
+        &:focus { outline: none; border-color: #4f46e5; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+    }
 `;
 
 const PrimaryButton = styled.button`
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+    color: white; 
+    border: none; 
+    padding: 18px; 
+    border-radius: 16px; 
+    font-weight: 700; 
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px; 
+    transition: all 0.3s ease;
     &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(79, 70, 229, 0.4); filter: brightness(1.1); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
     .spinner { animation: ${spin} 1s linear infinite; }
@@ -352,43 +377,100 @@ const PrimaryButton = styled.button`
 const ResultContainer = styled.div` width: 100%; max-width: 700px; z-index: 1; padding-bottom: 140px; `;
 
 const ResultHeader = styled.div`
-    display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px;
-    .title-area { display: flex; flex-direction: column; gap: 10px; }
-    .success-badge, .score-badge { align-self: flex-start; backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    display: flex; 
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 40px;
+    
+    .title-area {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .success-badge, .score-badge { 
+        align-self: flex-start;
+        backdrop-filter: blur(10px);
+        padding: 8px 16px; 
+        border-radius: 100px; 
+        font-size: 0.8rem; 
+        font-weight: 700; 
+        display: flex; align-items: center; gap: 8px; 
+    }
+    
     .success-badge { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
     .score-badge { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+    
     h2 { margin: 0; font-size: 2rem; font-weight: 800; color: #fff; }
-    .reset-btn { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); color: #fff; padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; &:hover { background: rgba(255,255,255,0.1); } }
-    @media (max-width: 480px) { h2 { font-size: 1.5rem; } }
+    
+    .reset-btn { 
+        align-self: flex-start;
+        background: rgba(255,255,255,0.05); 
+        border: 1px solid rgba(255,255,255,0.1); 
+        backdrop-filter: blur(10px);
+        color: #fff; padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; 
+        &:hover { background: rgba(255,255,255,0.1); }
+    }
+
+    @media (max-width: 480px) {
+        h2 { font-size: 1.5rem; }
+    }
 `;
 
 const QuestionGrid = styled.div` display: flex; flex-direction: column; gap: 20px; `;
 
 const QuestionCard = styled.div`
-    background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px; border-radius: 24px; animation: ${springUp} 0.5s ease-out forwards;
+    background: rgba(255, 255, 255, 0.02); 
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    padding: 25px; 
+    border-radius: 24px;
+    animation: ${springUp} 0.5s ease-out forwards;
+
     .q-num { color: #818cf8; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; opacity: 0.8; }
     h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 25px; color: #fff; line-height: 1.5; }
     .options-list { display: flex; flex-direction: column; gap: 10px; }
-    .opt { padding: 15px 18px; border-radius: 16px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; color: #d1d1d6; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s ease;
+    
+    .opt { 
+        padding: 15px 18px; border-radius: 16px; 
+        background: rgba(0, 0, 0, 0.2); 
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.95rem; color: #d1d1d6; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s ease;
+        
         &:hover:not(.correct):not(.wrong) { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); transform: scale(1.01); }
         &.selected { border-color: #4f46e5; background: rgba(79, 70, 229, 0.1); color: #fff; }
         &.correct { border-color: #22c55e; background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600; }
         &.wrong { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        
         .checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         &.selected .checkbox { border-color: #4f46e5; }
         &.correct .checkbox { border-color: #22c55e; background: #22c55e; }
         .inner-dot { width: 10px; height: 10px; border-radius: 50%; background: #4f46e5; }
         .status-icon { margin-left: auto; }
     }
-    @media (max-width: 480px) { padding: 20px; h3 { font-size: 1.1rem; } .opt { font-size: 0.9rem; } }
+
+    @media (max-width: 480px) {
+        padding: 20px;
+        h3 { font-size: 1.1rem; }
+        .opt { font-size: 0.9rem; }
+    }
 `;
 
 const StickyFooter = styled.div`
-    position: fixed; bottom: 0; left: 0; width: 100%; padding: 25px 15px; background: linear-gradient(to top, rgba(0,0,0,0.9) 60%, transparent); backdrop-filter: blur(10px); display: flex; justify-content: center; z-index: 10;
+    position: fixed; bottom: 0; left: 0; width: 100%; padding: 25px 15px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 60%, transparent);
+    backdrop-filter: blur(10px);
+    display: flex; justify-content: center; z-index: 10;
 `;
 
 const SubmitButton = styled(PrimaryButton)` 
-    width: 100%; max-width: 400px; padding: 16px; border-radius: 100px; font-size: 1.1rem; box-shadow: 0 15px 40px -10px rgba(79, 70, 229, 0.6); 
+    width: 100%;
+    max-width: 400px;
+    padding: 16px; 
+    border-radius: 100px; 
+    font-size: 1.1rem; 
+    box-shadow: 0 15px 40px -10px rgba(79, 70, 229, 0.6); 
 `;
 
 export default PlayQuiz;

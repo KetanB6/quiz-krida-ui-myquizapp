@@ -4,14 +4,53 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, Clock, AlertCircle, Plus, Loader2, Fingerprint, Eye, 
-  HelpCircle, ChevronLeft, Edit3, Save, Trash2, Inbox, FileText, X, Trophy, Download 
+  HelpCircle, ChevronLeft, Edit3, Save, Trash2, Inbox, FileText, X, Trophy, Download,
+  QrCode, Share2 
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-/* --- NEW: RESULT MODAL COMPONENT --- */
+/* --- UPDATED: QR MODAL COMPONENT --- */
+const QRModal = ({ quizId, quizTitle, onClose }) => {
+  // Logic updated: Appends the Quiz ID to the URL so it pre-fills for the student
+  const quizLink = `http://localhost:3000/play?id=${quizId}`;
+
+  const shareToWhatsApp = () => {
+    const text = `Join my quiz: *${quizTitle}*\nScan the QR or click the link below to start (Quiz ID: ${quizId}):\n${quizLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  return (
+    <ModalOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <ModalContent initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ maxWidth: '400px', textAlign: 'center' }}>
+        <div className="modal-header">
+          <h3><QrCode size={20} color="#3b82f6" /> Share Quiz</h3>
+          <button onClick={onClose}><X size={20} /></button>
+        </div>
+        
+        <div style={{ background: 'white', padding: '20px', borderRadius: '15px', display: 'inline-block', marginBottom: '20px' }}>
+          <QRCodeSVG value={quizLink} size={200} level="H" includeMargin={true} />
+        </div>
+
+        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '10px' }}>
+          Students can scan this to join <b style={{color: 'white'}}>{quizTitle}</b>
+        </p>
+        <p style={{ color: '#3b82f6', fontSize: '0.8rem', marginBottom: '20px', fontWeight: 'bold' }}>
+          Quiz ID: {quizId} (Auto-fills on scan)
+        </p>
+
+        <WhatsAppBtn onClick={shareToWhatsApp}>
+          <Share2 size={18} /> Share on WhatsApp
+        </WhatsAppBtn>
+      </ModalContent>
+    </ModalOverlay>
+  );
+};
+
+/* --- RESULT MODAL COMPONENT --- */
 const ResultModal = ({ quizId, onClose }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +75,10 @@ const ResultModal = ({ quizId, onClose }) => {
     fetchResults();
   }, [quizId]);
 
-  /* --- LOGIC: DOWNLOAD AS PDF --- */
- const downloadPDF = () => {
+  const downloadPDF = () => {
     if (results.length === 0) return;
-    
     const doc = new jsPDF();
     doc.text(`Quiz Results - ID: ${quizId}`, 14, 15);
-    
     const tableColumn = ["Student Name", "Score", "Total", "Percentage"];
     const tableRows = results.map(res => [
       res.name,
@@ -51,15 +87,13 @@ const ResultModal = ({ quizId, onClose }) => {
       `${((res.score / res.outOf) * 100).toFixed(1)}%`
     ]);
 
-    // Use the function directly instead of calling it on the doc object
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 20,
-      theme: 'grid', // Optional: makes it look clean
-      headStyles: { fillColor: [37, 99, 235] } // Matches your primary blue
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235] }
     });
-    
     doc.save(`Quiz_Result_${quizId}.pdf`);
   };
 
@@ -77,7 +111,6 @@ const ResultModal = ({ quizId, onClose }) => {
             <button onClick={onClose}><X size={20} /></button>
           </div>
         </div>
-        
         {loading ? (
           <div className="loading-center"><Loader2 className="spinner" /></div>
         ) : results.length === 0 ? (
@@ -85,12 +118,7 @@ const ResultModal = ({ quizId, onClose }) => {
         ) : (
           <ResultTable>
             <thead>
-              <tr>
-                <th>Name</th>
-                <th>Score</th>
-                <th>Total</th>
-                <th>Percentage</th>
-              </tr>
+              <tr><th>Name</th><th>Score</th><th>Total</th><th>Percentage</th></tr>
             </thead>
             <tbody>
               {results.map((res, i) => (
@@ -109,8 +137,8 @@ const ResultModal = ({ quizId, onClose }) => {
   );
 };
 
-/* --- 1. EDIT COMPONENT (Kept as is) --- */
-const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
+/* --- EDIT COMPONENT --- */
+const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
   const [quizInfo, setQuizInfo] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -139,11 +167,7 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
           setQuestions(qs);
           setOriginalQnos(new Set(qs.map(q => q.qno)));
           setDeletedQnos([]); 
-        } else {
-          toast.error("Quiz not found");
         }
-      } catch (err) {
-        toast.error("Network error");
       } finally {
         setLoading(false);
       }
@@ -159,10 +183,9 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
 
   const addNewQuestion = () => {
     const nextQNo = questions.length > 0 ? Math.max(...questions.map(q => q.qno)) + 1 : 1;
-    const newBlankQuestion = {
+    setQuestions([...questions, {
       qno: nextQNo, question: "", opt1: "", opt2: "", opt3: "", opt4: "", correctOpt: "opt1", quizId: parseInt(quizId), isLocalOnly: true 
-    };
-    setQuestions([...questions, newBlankQuestion]);
+    }]);
   };
 
   const handleDeleteQuestion = (qno, index) => {
@@ -184,7 +207,7 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
     };
     try {
       const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Logged/Edit`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (response.ok) { toast.success("Updated!"); onBack(); }
@@ -207,7 +230,6 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
           </SaveBtn>
         </div>
       </EditHeaderSection>
-
       <EditLayout>
         <ConfigCard>
           <h3>Quiz Settings</h3>
@@ -222,7 +244,6 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
             </div>
           </div>
         </ConfigCard>
-
         {questions.map((q, idx) => (
           <QuestionEditBox key={idx}>
             <div className="q-top">
@@ -253,7 +274,7 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
   );
 };
 
-/* --- 2. PREVIEW COMPONENT (Kept as is) --- */
+/* --- PREVIEW COMPONENT --- */
 const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -292,7 +313,7 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
   );
 };
 
-/* --- 3. MAIN DASHBOARD --- */
+/* --- MAIN DASHBOARD --- */
 const UserDashboard = () => {
   const router = useRouter();
   const [quizzes, setQuizzes] = useState([]);
@@ -301,6 +322,7 @@ const UserDashboard = () => {
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [editQuizId, setEditQuizId] = useState(null);
   const [viewResultId, setViewResultId] = useState(null); 
+  const [viewQRId, setViewQRId] = useState(null); 
   const [switchingStatusId, setSwitchingStatusId] = useState(null);
   const primaryColor = "#2563eb";
 
@@ -333,9 +355,7 @@ const UserDashboard = () => {
         setQuizzes(prev => prev.map(q => q.quizId === quizId ? { ...q, status: String(q.status) === "true" ? "false" : "true" } : q));
         toast.success("Status switched");
       }
-    } finally {
-      setSwitchingStatusId(null);
-    }
+    } finally { setSwitchingStatusId(null); }
   };
 
   const handleDeleteQuiz = async (quizId) => {
@@ -346,15 +366,26 @@ const UserDashboard = () => {
     if (response.ok) setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
   };
 
+  const activeQRQuiz = quizzes.find(q => q.quizId === viewQRId);
+
   return (
     <DashboardWrapper>
       <Toaster position="bottom-right" />
+      
       <AnimatePresence>
         {viewResultId && <ResultModal quizId={viewResultId} onClose={() => setViewResultId(null)} />}
+        {viewQRId && (
+          <QRModal 
+            quizId={viewQRId} 
+            quizTitle={activeQRQuiz?.quizTitle || "Untitled Quiz"} 
+            onClose={() => setViewQRId(null)} 
+          />
+        )}
       </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {editQuizId ? (
-          <EditQuizModule quizId={editQuizId} primaryColor={primaryColor} userEmail={userEmail} onBack={() => { setEditQuizId(null); fetchUserQuizzes(userEmail); }} />
+          <EditQuizModule quizId={editQuizId} primaryColor={primaryColor} onBack={() => { setEditQuizId(null); fetchUserQuizzes(userEmail); }} />
         ) : selectedQuizId ? (
           <FullQuizPreview quizId={selectedQuizId} onBack={() => setSelectedQuizId(null)} primaryColor={primaryColor} />
         ) : (
@@ -368,6 +399,7 @@ const UserDashboard = () => {
                 <Plus size={20} /> <span>New Quiz</span>
               </CreateBtn>
             </header>
+
             {loading ? <LoadingState><Loader2 className="spinner" size={40} /></LoadingState> : (
               <QuizGrid>
                 {quizzes.map((quiz) => (
@@ -378,6 +410,7 @@ const UserDashboard = () => {
                         <StatusBadge onClick={() => handleToggleStatus(quiz.quizId)} $isActive={String(quiz.status) === "true"} disabled={switchingStatusId === quiz.quizId}>
                           {switchingStatusId === quiz.quizId ? <Loader2 size={12} className="spinner" /> : (String(quiz.status) === "true" ? "Active" : "Inactive")}
                         </StatusBadge>
+                        <QRIconButton onClick={() => setViewQRId(quiz.quizId)} title="Show QR"><QrCode size={16} /></QRIconButton>
                         <EditIconButton onClick={() => setEditQuizId(quiz.quizId)} title="Edit Quiz"><Edit3 size={16} /></EditIconButton>
                         <ResultIconButton onClick={() => setViewResultId(quiz.quizId)} title="Show Results"><FileText size={16} /></ResultIconButton>
                         <DeleteIconButton onClick={() => handleDeleteQuiz(quiz.quizId)} title="Delete Quiz"><Trash2 size={16} /></DeleteIconButton>
@@ -400,12 +433,14 @@ const UserDashboard = () => {
   );
 };
 
-/* --- STYLES --- */
+/* --- STYLES (NO CHANGES) --- */
 const ModalOverlay = styled(motion.div)` position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; `;
 const ModalContent = styled(motion.div)` background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 600px; padding: 24px; position: relative; backdrop-filter: blur(16px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; h3 { display: flex; align-items: center; gap: 10px; margin: 0; } button { background: none; border: none; color: #94a3b8; cursor: pointer; } } .loading-center { display: flex; justify-content: center; padding: 40px; .spinner { animation: spin 1s linear infinite; } } .no-data { text-align: center; color: #94a3b8; padding: 20px; } `;
 const ResultTable = styled.table` width: 100%; border-collapse: collapse; margin-top: 10px; th, td { text-align: left; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); } th { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; } .score-cell { color: #10b981; font-weight: 700; } `;
 const DownloadBtn = styled.button` background: rgba(37, 99, 235, 0.1); border: none; color: #3b82f6; padding: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; &:hover { background: #3b82f6; color: white; } `;
 const ResultIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: #f59e0b; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #f59e0b; color: white; } `;
+const QRIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: #3b82f6; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #3b82f6; color: white; } `;
+const WhatsAppBtn = styled.button` width: 100%; background: #25d366; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; &:hover { transform: scale(1.02); background: #22c35e; } `;
 const DashboardWrapper = styled.div` max-width: 1200px; margin: 0 auto; padding: 40px 20px; color: #f8fafc; .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 2.2rem; font-weight: 800; } .highlight { color: #3b82f6; } } `;
 const QuizGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; `;
 const StyledCard = styled(motion.div)` background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 20px; backdrop-filter: blur(10px); .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; } .icon-bg { padding: 8px; background: rgba(37, 99, 235, 0.1); border-radius: 10px; } .quiz-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: white; } `;
