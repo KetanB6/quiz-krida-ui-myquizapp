@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Zap, Loader2, Trophy, RefreshCcw, User, Hash, Play, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react';
+import { Zap, Loader2, Trophy, RefreshCcw, User, Hash, Play, CheckCircle2, XCircle, Timer } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+
+const SECONDS_PER_QUESTION = 30; // Set your desired time here
 
 const AIGenerator = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -10,93 +12,44 @@ const AIGenerator = () => {
     const [userAnswers, setUserAnswers] = useState({});
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [score, setScore] = useState(0);
-
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(60); 
+    
+    // --- New State for Step-by-Step Logic ---
+    const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(SECONDS_PER_QUESTION);
 
     const [joinData, setJoinData] = useState({
         participantName: '',
         quizId: ''
     });
 
-    const handleSubmitExam = useCallback(async (finalAnswers = userAnswers) => {
-        if (isSubmitted) return;
-        setIsLoading(true);
-        
-        const questions = quizData.questions;
-        let currentScore = 0;
-        
-        questions.forEach((q, idx) => {
-            const correctKey = q.correctOpt; 
-            const correctTextValue = q[correctKey]; 
-            if (finalAnswers[idx] === correctTextValue) {
-                currentScore++;
-            }
-        });
-
-        const finalSubmission = {
-            quizId: parseInt(joinData.quizId),
-            participantName: joinData.participantName,
-            score: currentScore.toString(),
-            outOf: questions.length.toString()
-        };
-
-        try {
-            const response = await fetch('https://noneditorial-professionally-serena.ngrok-free.dev/Play/Submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': '69420',
-                },
-                body: JSON.stringify(finalSubmission)
-            });
-
-            if (response.ok) {
-                setScore(currentScore);
-                setIsSubmitted(true);
-                toast.success("Exam Submitted Successfully!");
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                throw new Error("Failed to save results on server.");
-            }
-        } catch (error) {
-            console.error("Submission Error:", error);
-            setScore(currentScore);
-            setIsSubmitted(true);
-            toast.error("Network error. Results shown locally.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [quizData, userAnswers, joinData, isSubmitted]);
-
-    // --- FIXED NAVIGATION LOGIC ---
-    const handleNextQuestion = useCallback(() => {
-        if (!quizData) return;
-        if (currentIndex < quizData.questions.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-            setTimeLeft(60); 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-            handleSubmitExam();
-        }
-    }, [currentIndex, quizData, handleSubmitExam]);
-
-    // --- FIXED TIMER EFFECT ---
+    // --- Timer Logic ---
     useEffect(() => {
-        let timer;
-        if (quizData && !isSubmitted) {
-            timer = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        handleNextQuestion();
-                        return 60;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+        if (!quizData || isSubmitted) return;
+
+        if (timeLeft === 0) {
+            handleNextQuestion();
+            return;
         }
+
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+        }, 1000);
+
         return () => clearInterval(timer);
-    }, [quizData, isSubmitted, handleNextQuestion]);
+    }, [timeLeft, quizData, isSubmitted]);
+
+    const handleNextQuestion = () => {
+        const isLastQuestion = currentQuestionIdx === quizData.questions.length - 1;
+        
+        if (isLastQuestion) {
+            handleSubmitExam();
+        } else {
+            setCurrentQuestionIdx(prev => prev + 1);
+            setTimeLeft(SECONDS_PER_QUESTION);
+        }
+    };
+
+    // --- Core Logic Functions ---
 
     const handleJoinQuiz = async () => {
         if (!joinData.participantName || !joinData.quizId) {
@@ -115,12 +68,22 @@ const AIGenerator = () => {
             });
 
             if (!response.ok) throw new Error(`Quiz not Started Yet`);
+
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Server returned an invalid format (HTML). Check your API endpoint.");
+            }
+
             const data = await response.json();
+            if (!data.questions || data.questions.length === 0) {
+                throw new Error("This quiz has no questions.");
+            }
+
             setQuizData(data);
-            setCurrentIndex(0); // Reset index on new quiz
-            setTimeLeft(60); 
+            setTimeLeft(SECONDS_PER_QUESTION); // Start timer
             toast.success(`Joined: ${data.quiz.quizTitle}`);
         } catch (error) {
+            console.error("Fetch Error:", error);
             toast.error(error.message);
         } finally {
             setIsLoading(false);
@@ -132,6 +95,53 @@ const AIGenerator = () => {
         setUserAnswers(prev => ({ ...prev, [questionIdx]: optionText }));
     };
 
+    const handleSubmitExam = async () => {
+        const questions = quizData.questions;
+
+        let currentScore = 0;
+        questions.forEach((q, idx) => {
+            const correctKey = q.correctOpt; 
+            const correctTextValue = q[correctKey]; 
+            if (userAnswers[idx] === correctTextValue) {
+                currentScore++;
+            }
+        });
+
+        const finalSubmission = {
+            quizId: parseInt(joinData.quizId),
+            participantName: joinData.participantName,
+            score: currentScore.toString(),
+            outOf: questions.length.toString()
+        };
+
+        setIsLoading(true);
+        try {
+            const response = await fetch('https://noneditorial-professionally-serena.ngrok-free.dev/Play/Submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': '69420',
+                },
+                body: JSON.stringify(finalSubmission)
+            });
+
+            if (response.ok) {
+                setScore(currentScore);
+                setIsSubmitted(true);
+                toast.success("Result recorded on server!");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                const errorText = await response.text();
+                throw new Error(errorText || `Submission failed with status ${response.status}`);
+            }
+        } catch (error) {
+            console.error("Submission Error:", error);
+            toast.error(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <PageContainer>
             <Toaster position="top-center" />
@@ -139,36 +149,36 @@ const AIGenerator = () => {
             {!quizData ? (
                 <GlassCard>
                     <Header>
-                        <div className="icon-badge"><Play size={20} /></div>
+                        <div className="icon-badge"><Play size={24} /></div>
                         <div>
-                            <h2>Join Session</h2>
-                            <p>60s per question</p>
+                            <h2>Join Quiz Session</h2>
+                            <p>Enter your details to retrieve the quiz.</p>
                         </div>
                     </Header>
 
                     <FormGrid>
                         <InputGroup>
-                            <label><User size={12} /> Name</label>
+                            <label><User size={14} /> Full Name</label>
                             <input 
                                 type="text" 
-                                placeholder="Full Name" 
+                                placeholder="e.g. Ketan Bidave" 
                                 value={joinData.participantName}
                                 onChange={(e) => setJoinData({...joinData, participantName: e.target.value})}
                             />
                         </InputGroup>
 
                         <InputGroup>
-                            <label><Hash size={12} /> Quiz ID</label>
+                            <label><Hash size={14} /> Quiz ID</label>
                             <input 
                                 type="number" 
-                                placeholder="ID" 
+                                placeholder="Enter Numeric ID" 
                                 value={joinData.quizId}
                                 onChange={(e) => setJoinData({...joinData, quizId: e.target.value})}
                             />
                         </InputGroup>
 
                         <PrimaryButton onClick={handleJoinQuiz} disabled={isLoading}>
-                            {isLoading ? <Loader2 className="spinner" /> : "Start Quiz"}
+                            {isLoading ? <Loader2 className="spinner" /> : "Verify & Access Quiz"}
                         </PrimaryButton>
                     </FormGrid>
                 </GlassCard>
@@ -176,25 +186,14 @@ const AIGenerator = () => {
                 <ResultContainer>
                     <ResultHeader>
                         <div className="title-area">
-                            <div className={isSubmitted ? "score-badge" : "timer-badge"}>
-                                {isSubmitted ? <Trophy size={16} /> : <Clock size={16} />}
+                            <div className={isSubmitted ? "score-badge" : "success-badge"}>
+                                {isSubmitted ? <Trophy size={16} /> : <Timer size={16} />}
                                 {isSubmitted 
                                     ? `Final Score: ${score} / ${quizData.questions.length}` 
-                                    : `${timeLeft}s Remaining`}
+                                    : `Time Remaining: ${timeLeft}s`}
                             </div>
-                            <h2>
-                                {isSubmitted 
-                                    ? "Exam Summary" 
-                                    : `Question ${currentIndex + 1} of ${quizData.questions.length}`}
-                            </h2>
+                            <h2>{isSubmitted ? "Performance Summary" : joinData.participantName}</h2>
                         </div>
-                        
-                        {!isSubmitted && (
-                            <TimerTrack>
-                                <TimerFill $width={(timeLeft / 60) * 100} />
-                            </TimerTrack>
-                        )}
-
                         {isSubmitted && (
                             <button className="reset-btn" onClick={() => window.location.reload()}>
                                 <RefreshCcw size={16} /> New Quiz
@@ -202,13 +201,20 @@ const AIGenerator = () => {
                         )}
                     </ResultHeader>
                     
+                    {!isSubmitted && (
+                        <TimerBarContainer>
+                            <TimerBarFill progress={(timeLeft / SECONDS_PER_QUESTION) * 100} />
+                        </TimerBarContainer>
+                    )}
+
                     <QuestionGrid>
                         {quizData.questions.map((q, idx) => {
-                            if (!isSubmitted && idx !== currentIndex) return null;
+                            // Only show current question if not submitted, or show all if submitted
+                            if (!isSubmitted && idx !== currentQuestionIdx) return null;
 
                             return (
-                                <QuestionCard key={idx}>
-                                    <div className="q-num">Question {idx + 1}</div>
+                                <QuestionCard key={idx} style={{ animationDelay: `0.1s` }}>
+                                    <div className="q-num">Question {idx + 1} of {quizData.questions.length}</div>
                                     <h3>{q.question}</h3>
                                     <div className="options-list">
                                         {["opt1", "opt2", "opt3", "opt4"].map((optKey) => {
@@ -248,8 +254,7 @@ const AIGenerator = () => {
                     {!isSubmitted && (
                         <StickyFooter>
                             <SubmitButton onClick={handleNextQuestion} disabled={isLoading}>
-                                {currentIndex === quizData.questions.length - 1 ? "Finish Exam" : "Save & Next"}
-                                <ChevronRight size={18} />
+                                {currentQuestionIdx === quizData.questions.length - 1 ? "Submit Final Exam" : "Next Question"}
                             </SubmitButton>
                         </StickyFooter>
                     )}
@@ -259,99 +264,213 @@ const AIGenerator = () => {
     );
 };
 
-// --- Updated Styled Components ---
+// --- New Timer Components ---
+const TimerBarContainer = styled.div`
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+`;
 
+const TimerBarFill = styled.div`
+    height: 100%;
+    width: ${props => props.progress}%;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    transition: width 1s linear;
+`;
+
+// --- Existing Styled Components ---
 const spin = keyframes` from { transform: rotate(0deg); } to { transform: rotate(360deg); } `;
-const springUp = keyframes` from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } `;
+const springUp = keyframes` from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } `;
 
 const PageContainer = styled.div`
-    min-height: 100vh; padding: 20px 15px; display: flex; justify-content: center; align-items: flex-start;
-    color: #e2e2e2; font-family: 'Inter', sans-serif; background: transparent; position: relative; 
+    min-height: 100vh; 
+    padding: 40px 15px; 
+    display: flex; 
+    justify-content: center;
+    color: #e2e2e2; 
+    font-family: 'Inter', sans-serif; 
+    background: transparent; 
+    position: relative; 
     overflow-x: hidden;
+    
+    @media (max-width: 768px) {
+        padding: 20px 12px;
+    }
 `;
 
 const GlassCard = styled.div`
-    width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.03); 
-    backdrop-filter: blur(40px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.1); 
-    border-radius: 24px; padding: 20px; animation: ${springUp} 0.5s ease-out;
-    margin-top: 5vh;
+    width: 100%; 
+    max-width: 440px; 
+    background: rgba(255, 255, 255, 0.03); 
+    backdrop-filter: blur(40px) saturate(150%);
+    -webkit-backdrop-filter: blur(40px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    border-radius: 32px; 
+    padding: 30px; 
+    z-index: 1;
+    animation: ${springUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+    height: fit-content;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+    @media (max-width: 480px) {
+        padding: 24px;
+        border-radius: 24px;
+    }
 `;
 
 const Header = styled.div`
-    display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
+    display: flex; 
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px; 
+    margin-bottom: 35px;
+    
     .icon-badge { 
-        width: 45px; height: 45px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
-        border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; 
+        width: 60px; height: 60px; 
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+        border-radius: 20px; 
+        display: flex; align-items: center; justify-content: center; 
+        color: white; 
+        box-shadow: 0 8px 30px rgba(79, 70, 229, 0.4); 
     }
-    h2 { margin: 0; font-size: 1.3rem; font-weight: 800; color: #fff; }
-    p { margin: 0; color: #a1a1aa; font-size: 0.85rem; }
+    h2 { margin: 0; font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+    p { margin: 0; color: #a1a1aa; font-size: 0.95rem; }
 `;
 
-const FormGrid = styled.div` display: flex; flex-direction: column; gap: 15px; `;
+const FormGrid = styled.div` display: flex; flex-direction: column; gap: 20px; `;
 
 const InputGroup = styled.div`
-    display: flex; flex-direction: column; gap: 6px;
-    label { color: #a1a1aa; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    display: flex; flex-direction: column; gap: 8px;
+    label { color: #a1a1aa; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; }
     input { 
-        background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); 
-        border-radius: 12px; padding: 12px; color: #fff; font-size: 0.95rem; 
-        &:focus { outline: none; border-color: #4f46e5; }
+        background: rgba(0, 0, 0, 0.2); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        border-radius: 14px; 
+        padding: 16px; 
+        color: #fff; 
+        font-size: 1rem; 
+        transition: all 0.2s;
+        &:focus { outline: none; border-color: #4f46e5; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
     }
 `;
 
 const PrimaryButton = styled.button`
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; 
-    border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px;
-    &:disabled { opacity: 0.5; }
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+    color: white; 
+    border: none; 
+    padding: 18px; 
+    border-radius: 16px; 
+    font-weight: 700; 
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px; 
+    transition: all 0.3s ease;
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(79, 70, 229, 0.4); filter: brightness(1.1); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
     .spinner { animation: ${spin} 1s linear infinite; }
 `;
 
-const ResultContainer = styled.div` width: 100%; max-width: 700px; padding-bottom: 140px; `;
+const ResultContainer = styled.div` width: 100%; max-width: 700px; z-index: 1; padding-bottom: 140px; `;
 
 const ResultHeader = styled.div`
-    display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px;
-    .timer-badge { background: rgba(79, 70, 229, 0.15); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.3); padding: 6px 14px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 8px; align-self: flex-start;}
-    .score-badge { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); padding: 6px 14px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 8px; align-self: flex-start;}
-    h2 { margin: 0; font-size: 1.8rem; color: #fff; }
-    .reset-btn { align-self: flex-start; background: rgba(255,255,255,0.05); color: #fff; padding: 8px 16px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px;}
-`;
+    display: flex; 
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 40px;
+    
+    .title-area {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-const TimerTrack = styled.div`
-    width: 100%; height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; margin-top: 5px;
-`;
+    .success-badge, .score-badge { 
+        align-self: flex-start;
+        backdrop-filter: blur(10px);
+        padding: 8px 16px; 
+        border-radius: 100px; 
+        font-size: 0.8rem; 
+        font-weight: 700; 
+        display: flex; align-items: center; gap: 8px; 
+    }
+    
+    .success-badge { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .score-badge { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+    
+    h2 { margin: 0; font-size: 2rem; font-weight: 800; color: #fff; }
+    
+    .reset-btn { 
+        align-self: flex-start;
+        background: rgba(255,255,255,0.05); 
+        border: 1px solid rgba(255,255,255,0.1); 
+        backdrop-filter: blur(10px);
+        color: #fff; padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; transition: 0.2s; 
+        &:hover { background: rgba(255,255,255,0.1); }
+    }
 
-const TimerFill = styled.div`
-    height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); 
-    width: ${props => props.$width}%; transition: width 1s linear;
+    @media (max-width: 480px) {
+        h2 { font-size: 1.5rem; }
+    }
 `;
 
 const QuestionGrid = styled.div` display: flex; flex-direction: column; gap: 20px; `;
 
 const QuestionCard = styled.div`
-    background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.08); 
-    padding: 25px; border-radius: 24px; animation: ${springUp} 0.5s ease-out forwards;
-    .q-num { color: #818cf8; font-size: 0.75rem; font-weight: 800; margin-bottom: 10px; }
-    h3 { font-size: 1.2rem; color: #fff; line-height: 1.5; margin-bottom: 25px; }
+    background: rgba(255, 255, 255, 0.02); 
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    padding: 25px; 
+    border-radius: 24px;
+    animation: ${springUp} 0.5s ease-out forwards;
+
+    .q-num { color: #818cf8; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; opacity: 0.8; }
+    h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 25px; color: #fff; line-height: 1.5; }
     .options-list { display: flex; flex-direction: column; gap: 10px; }
+    
     .opt { 
-        padding: 15px 18px; border-radius: 16px; background: rgba(0, 0, 0, 0.2); 
-        border: 1px solid rgba(255, 255, 255, 0.05); color: #d1d1d6; display: flex; align-items: center; gap: 14px; cursor: pointer;
+        padding: 15px 18px; border-radius: 16px; 
+        background: rgba(0, 0, 0, 0.2); 
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.95rem; color: #d1d1d6; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s ease;
+        
+        &:hover:not(.correct):not(.wrong) { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); transform: scale(1.01); }
         &.selected { border-color: #4f46e5; background: rgba(79, 70, 229, 0.1); color: #fff; }
-        &.correct { border-color: #22c55e; background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        &.correct { border-color: #22c55e; background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600; }
         &.wrong { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        .checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; }
+        
+        .checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        &.selected .checkbox { border-color: #4f46e5; }
+        &.correct .checkbox { border-color: #22c55e; background: #22c55e; }
         .inner-dot { width: 10px; height: 10px; border-radius: 50%; background: #4f46e5; }
         .status-icon { margin-left: auto; }
+    }
+
+    @media (max-width: 480px) {
+        padding: 20px;
+        h3 { font-size: 1.1rem; }
+        .opt { font-size: 0.9rem; }
     }
 `;
 
 const StickyFooter = styled.div`
     position: fixed; bottom: 0; left: 0; width: 100%; padding: 25px 15px;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 60%, transparent); backdrop-filter: blur(10px);
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 60%, transparent);
+    backdrop-filter: blur(10px);
     display: flex; justify-content: center; z-index: 10;
 `;
 
-const SubmitButton = styled(PrimaryButton)` width: 100%; max-width: 400px; border-radius: 100px; `;
+const SubmitButton = styled(PrimaryButton)` 
+    width: 100%;
+    max-width: 400px;
+    padding: 16px; 
+    border-radius: 100px; 
+    font-size: 1.1rem; 
+    box-shadow: 0 15px 40px -10px rgba(79, 70, 229, 0.6); 
+`;
 
 export default AIGenerator;
