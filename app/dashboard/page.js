@@ -113,10 +113,7 @@ const ResultModal = ({ quizId, onClose }) => {
         {loading ? (
           <div className="loading-center"><Loader2 className="spinner" /></div>
         ) : results.length === 0 ? (
-          <div className="no-data">
-             <Inbox size={40} style={{marginBottom: '10px', opacity: 0.5}} />
-             <p>No results recorded yet.</p>
-          </div>
+          <p className="no-data">No results recorded yet.</p>
         ) : (
           <ResultTable>
             <thead>
@@ -139,8 +136,8 @@ const ResultModal = ({ quizId, onClose }) => {
   );
 };
 
-/* --- EDIT COMPONENT --- */
-const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
+/* --- EDIT MODULE --- */
+const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
   const [quizInfo, setQuizInfo] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,7 +166,11 @@ const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
           setQuestions(qs);
           setOriginalQnos(new Set(qs.map(q => q.qno)));
           setDeletedQnos([]); 
+        } else {
+          toast.error("Quiz not found");
         }
+      } catch (err) {
+        toast.error("Network error fetching quiz data");
       } finally {
         setLoading(false);
       }
@@ -185,60 +186,103 @@ const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
 
   const addNewQuestion = () => {
     const nextQNo = questions.length > 0 ? Math.max(...questions.map(q => q.qno)) + 1 : 1;
-    setQuestions([...questions, {
-      qno: nextQNo, question: "", opt1: "", opt2: "", opt3: "", opt4: "", correctOpt: "opt1", quizId: parseInt(quizId), isLocalOnly: true 
-    }]);
-    // Scroll to new question on mobile
-    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
+    const newBlankQuestion = {
+      qno: nextQNo,
+      question: "",
+      opt1: "",
+      opt2: "",
+      opt3: "",
+      opt4: "",
+      correctOpt: "opt1",
+      quizId: parseInt(quizId),
+      isLocalOnly: true 
+    };
+    setQuestions([...questions, newBlankQuestion]);
+    toast.success("New question block added!");
   };
 
   const handleDeleteQuestion = (qno, index) => {
-    if(!window.confirm("Delete?")) return;
+    if(!window.confirm("Delete this question?")) return;
     if (!questions[index].isLocalOnly && originalQnos.has(qno)) {
         setDeletedQnos(prev => [...prev, qno]);
     }
     setQuestions(questions.filter((_, i) => i !== index));
+    toast.success("Question removed (click Save to apply)");
   };
 
   const handleSave = async () => {
     if (!quizInfo?.quizTitle?.trim() || !quizInfo?.duration) {
-      toast.error("Quiz Title and Duration are required!");
+      toast.error("Quiz title and duration are required");
       return;
+    }
+
+    const firstInvalidIndex = questions.findIndex(q => 
+        !q.question?.trim() || !q.opt1?.trim() || !q.opt2?.trim() || !q.opt3?.trim() || !q.opt4?.trim()
+    );
+
+    if (firstInvalidIndex !== -1) {
+        toast.error(`Question ${firstInvalidIndex + 1} has empty fields!`);
+        return;
     }
 
     setSaving(true);
     const payload = { 
       quiz: {
-          quiz: { ...quizInfo, quizId: parseInt(quizId), status: String(quizInfo.status).toLowerCase() === "true" }, 
-          questions: questions.map(q => ({ ...q, qno: q.isLocalOnly ? 0 : q.qno, quizId: parseInt(quizId) }))
+          quiz: {
+            quizId: parseInt(quizId),
+            quizTitle: quizInfo.quizTitle,
+            duration: parseInt(quizInfo.duration),
+            status: String(quizInfo.status).toLowerCase() === "true", 
+            createdBy: quizInfo.createdBy || userEmail
+          }, 
+          questions: questions.map(q => ({
+            qno: q.isLocalOnly ? 0 : q.qno,
+            question: q.question, 
+            opt1: q.opt1,
+            opt2: q.opt2,
+            opt3: q.opt3,
+            opt4: q.opt4,
+            correctOpt: q.correctOpt,
+            quizId: parseInt(quizId) 
+          }))
       },
-      questionNos: deletedQnos
+      questionNos: deletedQnos 
     };
+
     try {
       const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Logged/Edit`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(payload)
       });
-      if (response.ok) { 
-        toast.success("Updated Successfully!"); 
+      if (response.ok) {
+        toast.success("Quiz updated successfully!");
         onBack(); 
+      } else {
+        toast.error("Server error. Please check all fields.");
       }
-    } finally { setSaving(false); }
+    } catch (err) {
+      toast.error("Network error");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <LoadingState><Loader2 className="spinner" size={40} /><p>Loading Quiz Data...</p></LoadingState>;
+  if (loading) return <LoadingState><Loader2 className="spinner" size={40} color={primaryColor} /><p>Loading...</p></LoadingState>;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ paddingBottom: '100px' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <EditHeaderSection>
         <div className="left">
-          <BackButton onClick={onBack}><ChevronLeft size={20} /> Cancel</BackButton>
-          <h2>Editing: {quizInfo?.quizTitle || "New Quiz"}</h2>
+          <BackButton onClick={onBack}><ChevronLeft size={20} /> <span className="btn-text">Cancel</span></BackButton>
+          <h2 className="edit-title">Edit: {quizInfo?.quizTitle}</h2>
         </div>
-        <div className="action-btns desktop-only">
-          <AddQuestionBtn onClick={addNewQuestion}><Plus size={18} /> Add Question</AddQuestionBtn>
+        <div className="action-btns">
+          <AddQuestionBtn type="button" onClick={addNewQuestion}>
+            <Plus size={18} /> <span className="btn-text">Add Question</span>
+          </AddQuestionBtn>
           <SaveBtn onClick={handleSave} disabled={saving} $primary={primaryColor}>
-            {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />} Save Changes
+            {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />} <span className="btn-text">Save All</span>
           </SaveBtn>
         </div>
       </EditHeaderSection>
@@ -249,37 +293,28 @@ const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
           <div className="form-grid">
             <div className="field">
               <label>Quiz Title</label>
-              <input 
-                placeholder="Enter quiz title..."
-                value={quizInfo?.quizTitle || ''} 
-                onChange={(e) => setQuizInfo({...quizInfo, quizTitle: e.target.value})} 
-              />
+              <input value={quizInfo?.quizTitle || ''} onChange={(e) => setQuizInfo({...quizInfo, quizTitle: e.target.value})} />
             </div>
             <div className="field">
               <label>Duration (min)</label>
-              <input 
-                type="number" 
-                placeholder="Minutes"
-                value={quizInfo?.duration || ''} 
-                onChange={(e) => setQuizInfo({...quizInfo, duration: e.target.value})} 
-              />
+              <input type="number" value={quizInfo?.duration || ''} onChange={(e) => setQuizInfo({...quizInfo, duration: e.target.value})} />
             </div>
           </div>
         </ConfigCard>
 
         {questions.length === 0 ? (
-          <EmptyStateBox>
-            <Inbox size={48} color="#3b82f6" />
-            <h4>No Questions Found</h4>
-            <p>Your quiz is empty.</p>
-          </EmptyStateBox>
+          <EmptyState>
+            <Inbox size={48} />
+            <p>No questions found in this quiz.</p>
+            <AddQuestionBtn onClick={addNewQuestion}><Plus size={18}/> Add your first question</AddQuestionBtn>
+          </EmptyState>
         ) : (
           questions.map((q, idx) => (
             <QuestionEditBox key={idx}>
               <div className="q-top">
                 <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                   <span>Question {idx + 1}</span>
-                  <DeleteSmallBtn onClick={() => handleDeleteQuestion(q.qno, idx)}><Trash2 size={14} /></DeleteSmallBtn>
+                  <DeleteSmallBtn onClick={() => handleDeleteQuestion(q.qno, idx)}><Trash2 size={16} /></DeleteSmallBtn>
                 </div>
                 <div className="correct-select">
                   <label>Correct:</label>
@@ -299,9 +334,9 @@ const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
                   <div key={opt} className="opt-field">
                     <span className="opt-label">{String.fromCharCode(65+i)}</span>
                     <input 
-                      placeholder={`Option ${String.fromCharCode(65+i)}`}
                       value={q[opt]} 
                       onChange={(e) => handleQuestionChange(idx, opt, e.target.value)} 
+                      placeholder={`Option ${String.fromCharCode(65+i)}`} 
                     />
                   </div>
                 ))}
@@ -310,14 +345,6 @@ const EditQuizModule = ({ quizId, onBack, primaryColor }) => {
           ))
         )}
       </EditLayout>
-
-      {/* MOBILE STICKY FOOTER */}
-      <MobileStickyFooter>
-        <AddQuestionBtn onClick={addNewQuestion} style={{flex: 1}}><Plus size={18} /> Add</AddQuestionBtn>
-        <SaveBtn onClick={handleSave} disabled={saving} $primary={primaryColor} style={{flex: 2}}>
-          {saving ? <Loader2 className="spinner" size={18} /> : <Save size={18} />} Save Changes
-        </SaveBtn>
-      </MobileStickyFooter>
     </motion.div>
   );
 };
@@ -339,27 +366,27 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
   }, [quizId]);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <BackButton onClick={onBack}><ChevronLeft size={20} /> Back to Dashboard</BackButton>
+      <BackButton onClick={onBack}><ChevronLeft size={20} /> Back</BackButton>
       {loading ? <LoadingState><Loader2 className="spinner" size={40} /></LoadingState> : (
         <QuestionsContainer>
           <h2 className="preview-header">Quiz Preview</h2>
           {questions.length === 0 ? (
-             <EmptyStateBox>
-                <Inbox size={48} color="#3b82f6" />
-                <p>No questions found in this quiz.</p>
-             </EmptyStateBox>
+             <EmptyState>
+                <Inbox size={48} />
+                <p>No questions added to this quiz yet.</p>
+             </EmptyState>
           ) : (
             questions.map((q, index) => (
-              <FullQuestionItem key={index}>
-                <div className="q-label"><HelpCircle size={14} /> Question {index + 1}</div>
-                <p className="q-text">{q.question}</p>
-                <div className="options-grid">
-                  <span className={q.correctOpt === 'opt1' ? 'correct' : ''}>A: {q.opt1}</span>
-                  <span className={q.correctOpt === 'opt2' ? 'correct' : ''}>B: {q.opt2}</span>
-                  <span className={q.correctOpt === 'opt3' ? 'correct' : ''}>C: {q.opt3}</span>
-                  <span className={q.correctOpt === 'opt4' ? 'correct' : ''}>D: {q.opt4}</span>
-                </div>
-              </FullQuestionItem>
+                <FullQuestionItem key={index}>
+                  <div className="q-label"><HelpCircle size={14} /> Question {index + 1}</div>
+                  <p className="q-text">{q.question}</p>
+                  <div className="options-grid">
+                    <span className={q.correctOpt === 'opt1' ? 'correct' : ''}>A: {q.opt1}</span>
+                    <span className={q.correctOpt === 'opt2' ? 'correct' : ''}>B: {q.opt2}</span>
+                    <span className={q.correctOpt === 'opt3' ? 'correct' : ''}>C: {q.opt3}</span>
+                    <span className={q.correctOpt === 'opt4' ? 'correct' : ''}>D: {q.opt4}</span>
+                  </div>
+                </FullQuestionItem>
             ))
           )}
         </QuestionsContainer>
@@ -391,10 +418,13 @@ const UserDashboard = () => {
   }, []);
 
   const fetchUserQuizzes = async (email) => {
+    if (!email) return;
     setLoading(true);
     try {
       const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Logged?email=${email}`, {
-        method: 'GET', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+        method: 'GET', 
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        cache: 'no-store' 
       });
       if (response.ok) setQuizzes(await response.json());
     } finally { setLoading(false); }
@@ -408,20 +438,17 @@ const UserDashboard = () => {
       });
       if (response.ok) {
         setQuizzes(prev => prev.map(q => q.quizId === quizId ? { ...q, status: String(q.status) === "true" ? "false" : "true" } : q));
-        toast.success("Status updated");
+        toast.success("Status switched");
       }
     } finally { setSwitchingStatusId(null); }
   };
 
   const handleDeleteQuiz = async (quizId) => {
-    if(!window.confirm("Are you sure you want to delete this quiz?")) return;
+    if(!window.confirm("Delete quiz?")) return;
     const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Logged/Delete/${quizId}`, {
       method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
     });
-    if (response.ok) {
-      setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
-      toast.success("Quiz Deleted");
-    }
+    if (response.ok) setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
   };
 
   const activeQRQuiz = quizzes.find(q => q.quizId === viewQRId);
@@ -443,7 +470,15 @@ const UserDashboard = () => {
 
       <AnimatePresence mode="wait">
         {editQuizId ? (
-          <EditQuizModule quizId={editQuizId} primaryColor={primaryColor} onBack={() => { setEditQuizId(null); fetchUserQuizzes(userEmail); }} />
+          <EditQuizModule 
+            quizId={editQuizId} 
+            primaryColor={primaryColor} 
+            userEmail={userEmail}
+            onBack={() => { 
+                setEditQuizId(null); 
+                setTimeout(() => fetchUserQuizzes(userEmail), 1500);
+            }} 
+          />
         ) : selectedQuizId ? (
           <FullQuizPreview quizId={selectedQuizId} onBack={() => setSelectedQuizId(null)} primaryColor={primaryColor} />
         ) : (
@@ -454,24 +489,23 @@ const UserDashboard = () => {
                 <p>Logged in as <span className="highlight">{userEmail}</span></p>
               </div>
               <CreateBtn onClick={() => router.push("/create")} $primary={primaryColor}>
-                <Plus size={20} /> <span className="desktop-only">New Quiz</span>
+                <Plus size={20} /> <span className="btn-text">New Quiz</span>
               </CreateBtn>
             </header>
 
             {loading ? <LoadingState><Loader2 className="spinner" size={40} /></LoadingState> : (
               quizzes.length === 0 ? (
-                <EmptyStateBox>
-                  <Inbox size={60} color="#3b82f6" style={{opacity: 0.3, marginBottom: '20px'}} />
-                  <h3>No Quizzes Created</h3>
-                  <p>Start by creating your first interactive quiz.</p>
-                  <CreateBtn onClick={() => router.push("/create")} $primary={primaryColor} style={{marginTop: '20px'}}>
-                    <Plus size={20} /> Create Now
+                <EmptyState>
+                  <Inbox size={48} />
+                  <p>You haven't created any quizzes yet.</p>
+                  <CreateBtn onClick={() => router.push("/create")} $primary={primaryColor}>
+                    <Plus size={20} /> Create Your First Quiz
                   </CreateBtn>
-                </EmptyStateBox>
+                </EmptyState>
               ) : (
                 <QuizGrid>
                   {quizzes.map((quiz) => (
-                    <StyledCard key={quiz.quizId} whileHover={{ y: -5 }}>
+                    <StyledCard key={quiz.quizId}>
                       <div className="card-header">
                         <div className="icon-bg"><BookOpen size={20} color={primaryColor} /></div>
                         <div style={{display:'flex', gap: '8px', alignItems: 'center'}}>
@@ -484,12 +518,12 @@ const UserDashboard = () => {
                           <DeleteIconButton onClick={() => handleDeleteQuiz(quiz.quizId)} title="Delete Quiz"><Trash2 size={16} /></DeleteIconButton>
                         </div>
                       </div>
-                      <h3 className="quiz-title">{quiz.quizTitle || "Untitled Quiz"}</h3>
+                      <h3 className="quiz-title">{quiz.quizTitle || "Untitled"}</h3>
                       <DataGrid>
                         <div className="data-item"><Clock size={14} /> {quiz.duration}m</div>
                         <div className="data-item"><Fingerprint size={14} /> ID: {quiz.quizId}</div>
                       </DataGrid>
-                      <SeeQuestionBtn onClick={() => setSelectedQuizId(quiz.quizId)} $primary={primaryColor}><Eye size={16} /> Preview Quiz</SeeQuestionBtn>
+                      <SeeQuestionBtn onClick={() => setSelectedQuizId(quiz.quizId)} $primary={primaryColor}><Eye size={16} /> See Questions</SeeQuestionBtn>
                     </StyledCard>
                   ))}
                 </QuizGrid>
@@ -503,152 +537,56 @@ const UserDashboard = () => {
 };
 
 /* --- STYLES --- */
-const MobileStickyFooter = styled.div`
-  display: none;
-  @media (max-width: 768px) {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 15px 20px;
-    gap: 12px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    z-index: 100;
-    box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
-  }
-`;
-
-const EmptyStateBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  text-align: center;
-  h3, h4 { color: white; margin-top: 15px; margin-bottom: 5px; }
-  p { color: #94a3b8; max-width: 400px; font-size: 0.95rem; }
-`;
-
 const ModalOverlay = styled(motion.div)` position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; `;
-const ModalContent = styled(motion.div)` background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 600px; padding: 24px; position: relative; backdrop-filter: blur(16px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; h3 { display: flex; align-items: center; gap: 10px; margin: 0; } button { background: none; border: none; color: #94a3b8; cursor: pointer; } } .loading-center { display: flex; justify-content: center; padding: 40px; .spinner { animation: spin 1s linear infinite; } } .no-data { text-align: center; color: #94a3b8; padding: 40px; display: flex; flex-direction: column; align-items: center; } `;
+const ModalContent = styled(motion.div)` background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 600px; padding: 24px; position: relative; backdrop-filter: blur(16px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; h3 { display: flex; align-items: center; gap: 10px; margin: 0; } button { background: none; border: none; color: #94a3b8; cursor: pointer; } } .loading-center { display: flex; justify-content: center; padding: 40px; .spinner { animation: spin 1s linear infinite; } } .no-data { text-align: center; color: #94a3b8; padding: 20px; } `;
 const ResultTable = styled.table` width: 100%; border-collapse: collapse; margin-top: 10px; th, td { text-align: left; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); } th { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; } .score-cell { color: #10b981; font-weight: 700; } `;
 const DownloadBtn = styled.button` background: rgba(37, 99, 235, 0.1); border: none; color: #3b82f6; padding: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; &:hover { background: #3b82f6; color: white; } `;
 const ResultIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: #f59e0b; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #f59e0b; color: white; } `;
 const QRIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: #3b82f6; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #3b82f6; color: white; } `;
 const WhatsAppBtn = styled.button` width: 100%; background: #25d366; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; &:hover { transform: scale(1.02); background: #22c35e; } `;
-
-const DashboardWrapper = styled.div` 
-  max-width: 1200px; 
-  margin: 0 auto; 
-  padding: 40px 20px; 
-  color: #f8fafc; 
-
-  .main-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 40px; 
-    h1 { font-size: 1.8rem; font-weight: 800; } 
-    .highlight { color: #3b82f6; } 
-
-    @media (max-width: 600px) {
-      h1 { font-size: 1.4rem; }
-    }
-  }
-
-  .desktop-only {
-    @media (max-width: 768px) { display: none !important; }
-  }
-`;
-
-const QuizGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; `;
+const DashboardWrapper = styled.div` max-width: 1200px; margin: 0 auto; padding: 40px 20px; color: #f8fafc; .main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 1.8rem; font-weight: 800; } .highlight { color: #3b82f6; } @media (max-width: 640px) { flex-direction: column; align-items: flex-start; gap: 20px; h1 { font-size: 1.5rem; } } } .btn-text { @media (max-width: 640px) { display: none; } } `;
+const QuizGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; @media (max-width: 640px) { grid-template-columns: 1fr; } `;
 const StyledCard = styled(motion.div)` background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 20px; backdrop-filter: blur(10px); .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; } .icon-bg { padding: 8px; background: rgba(37, 99, 235, 0.1); border-radius: 10px; } .quiz-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: white; } `;
 
-const QuestionEditBox = styled.div` 
-  background: rgba(255, 255, 255, 0.03); 
-  border: 1px solid rgba(255, 255, 255, 0.1); 
-  padding: 20px; 
-  border-radius: 18px; 
-  margin-bottom: 15px; 
+/* IMPROVED MOBILE EDIT SECTION */
+const QuestionEditBox = styled.div` background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 18px; margin-bottom: 15px; @media (min-width: 640px) { padding: 20px; } .q-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; color: #3b82f6; font-weight: 700; } .correct-select { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; select { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; outline: none; } } .q-input { width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; min-height: 80px; resize: vertical; &:focus { border-color: #3b82f6; outline: none; } } .options-grid-edit { display: grid; grid-template-columns: 1fr; gap: 10px; @media (min-width: 640px) { grid-template-columns: 1fr 1fr; } .opt-field { display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid #334155; padding: 10px; border-radius: 10px; .opt-label { color: #3b82f6; font-weight: 800; font-size: 0.8rem; } input { background: none; border: none; color: white; width: 100%; outline: none; font-size: 0.9rem; } &:focus-within { border-color: #3b82f6; } } } `;
 
-  .q-top { display: flex; justify-content: space-between; margin-bottom: 12px; color: #3b82f6; font-weight: 700; } 
-  .q-input { 
-    width: 100%; background: transparent; border: 1px solid #334155; padding: 12px; 
-    border-radius: 10px; color: white; margin-bottom: 12px; font-family: inherit; font-size: 1rem;
-    &:focus { border-color: #3b82f6; outline: none; } 
-  } 
-
-  .options-grid-edit { 
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
-    @media (max-width: 600px) { grid-template-columns: 1fr; }
-    .opt-field { 
-      display: flex; align-items: center; gap: 10px; border: 1px solid #334155; 
-      padding: 10px; border-radius: 10px; 
-      input { background: none; border: none; color: white; width: 100%; outline: none; } 
-    } 
-  } 
-`;
-
-const CreateBtn = styled(motion.button)` display: flex; align-items: center; gap: 10px; background: ${p => p.$primary}; padding: 12px 24px; border-radius: 12px; color: white; border: none; font-weight: 700; cursor: pointer; `;
-
-const SaveBtn = styled.button` 
-  background: ${p => p.$primary}; color: white; padding: 12px 20px; border-radius: 12px; 
-  border: none; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; 
-  &:disabled { opacity: 0.6; } 
-`;
-
-const AddQuestionBtn = styled.button` 
-  background: none; border: 1px solid #3b82f6; color: #3b82f6; padding: 12px 20px; 
-  border-radius: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; 
-`;
-
-const BackButton = styled.button` background: none; border: none; color: #3b82f6; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; margin-bottom: 10px; `;
-const DeleteSmallBtn = styled.button` background: none; border: none; color: #ef4444; cursor: pointer; `;
-
-const StatusBadge = styled.button` 
-  padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; border: none; font-weight: 700; 
-  background: ${p => p.$isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; 
-  color: ${p => p.$isActive ? '#10b981' : '#f87171'}; cursor: pointer; 
-  display: flex; align-items: center; gap: 4px; 
-  &:disabled { opacity: 0.8; cursor: not-allowed; } 
-  .spinner { animation: spin 1s linear infinite; } 
-  @keyframes spin { to { transform: rotate(360deg); } } 
-`;
-
+const CreateBtn = styled(motion.button)` display: flex; align-items: center; gap: 10px; background: ${p => p.$primary}; padding: 10px 20px; border-radius: 12px; color: white; border: none; font-weight: 700; cursor: pointer; `;
+const SaveBtn = styled.button` background: ${p => p.$primary}; color: white; padding: 10px 16px; border-radius: 12px; border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: opacity 0.2s; &:disabled { opacity: 0.6; } `;
+const AddQuestionBtn = styled.button` background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; padding: 10px 16px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background: rgba(59, 130, 246, 0.2); } `;
+const BackButton = styled.button` background: none; border: none; color: #3b82f6; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; padding: 5px 0; `;
+const DeleteSmallBtn = styled.button` background: rgba(239, 68, 68, 0.1); border: none; color: #ef4444; cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; &:hover { background: #ef4444; color: white; } `;
+const StatusBadge = styled.button` padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; border: none; font-weight: 700; background: ${p => p.$isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${p => p.$isActive ? '#10b981' : '#f87171'}; cursor: pointer; display: flex; align-items: center; gap: 4px; &:disabled { opacity: 0.8; cursor: not-allowed; } .spinner { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } `;
 const EditIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #3b82f6; } `;
 const DeleteIconButton = styled.button` background: rgba(255,255,255,0.05); border: none; color: #f87171; padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #ef4444; color: white; } `;
-const LoadingState = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; .spinner { animation: spin 1s linear infinite; } p { margin-top: 15px; color: #94a3b8; } `;
+const LoadingState = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; .spinner { animation: spin 1s linear infinite; } `;
 const DataGrid = styled.div` display: flex; gap: 10px; margin-bottom: 15px; .data-item { font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; } `;
 const SeeQuestionBtn = styled.button` width: 100%; background: rgba(255,255,255,0.05); color: #94a3b8; padding: 10px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:hover { background: ${p => p.$primary}; color: white; } `;
+const EditLayout = styled.div` max-width: 800px; margin: 0 auto; padding-bottom: 40px; `;
+const ConfigCard = styled.div` background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 20px; margin-bottom: 20px; h3 { margin-bottom: 15px; font-size: 1rem; color: #94a3b8; } .form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; @media (min-width: 640px) { grid-template-columns: 1fr 1fr; } .field { display: flex; flex-direction: column; gap: 8px; label { font-size: 0.85rem; color: #64748b; } input { background: rgba(15, 23, 42, 0.5); border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; &:focus { border-color: #3b82f6; outline: none; } } } } `;
+const QuestionsContainer = styled.div` max-width: 800px; margin: 0 auto; .preview-header { margin-bottom: 20px; font-size: 1.5rem; } `;
+const FullQuestionItem = styled.div` background: rgba(30, 41, 59, 0.5); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); .q-label { color: #3b82f6; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; } .q-text { margin-bottom: 15px; font-weight: 500; } .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; @media (min-width: 640px) { grid-template-columns: 1fr 1fr; } span { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.9rem; } .correct { border: 1px solid #10b981; color: #10b981; background: rgba(16, 185, 129, 0.05); } } `;
 
-const EditLayout = styled.div` max-width: 800px; margin: 0 auto; `;
+const EditHeaderSection = styled.div` display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; @media (min-width: 640px) { flex-direction: row; justify-content: space-between; align-items: center; } .left { .edit-title { font-size: 1.3rem; margin-top: 5px; color: white; @media (min-width: 640px) { font-size: 1.8rem; } } } .action-btns { display: flex; gap: 10px; @media (max-width: 640px) { width: 100%; justify-content: flex-end; } } `;
 
-const ConfigCard = styled.div` 
-  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); 
-  padding: 20px; border-radius: 20px; margin-bottom: 20px; 
-  .form-grid { 
-    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-    @media (max-width: 600px) { grid-template-columns: 1fr; }
-    .field { 
-      display: flex; flex-direction: column; 
-      label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; } 
-      input { background: transparent; border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; &:focus { border-color: #3b82f6; outline: none; } } 
-    } 
-  } 
-`;
-
-const QuestionsContainer = styled.div` max-width: 800px; margin: 0 auto; `;
-const FullQuestionItem = styled.div` background: rgba(30, 41, 59, 0.5); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); .q-label { color: #3b82f6; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; } .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; @media (max-width: 500px) { grid-template-columns: 1fr; } span { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.9rem; } .correct { border: 1px solid #10b981; color: #10b981; } } `;
-
-const EditHeaderSection = styled.div` 
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; 
-  .action-btns { display: flex; gap: 10px; } 
-  h2 { @media (max-width: 600px) { font-size: 1.2rem; } }
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  color: #94a3b8;
+  gap: 20px;
+  text-align: center;
+  margin-top: 20px;
+  
+  p {
+    font-size: 1rem;
+    font-weight: 500;
+  }
 `;
 
 export default UserDashboard;
