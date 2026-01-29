@@ -18,7 +18,7 @@ const Form = () => {
     const [isEnteringDashboard, setIsEnteringDashboard] = useState(false);
 
     // OTP & Step Logic
-    const [step, setStep] = useState(1); // 1: Signup Form, 2: OTP Verification
+    const [step, setStep] = useState(1);
     const [otpInput, setOtpInput] = useState("");
     const [timer, setTimer] = useState(0);
 
@@ -34,18 +34,33 @@ const Form = () => {
 
     const primaryColor = "#2563eb";
 
-    // Auth Check
+    // --- UPDATED AUTH CHECK & WELCOME TOAST ---
     useEffect(() => {
         const token = localStorage.getItem("token");
         const user = localStorage.getItem("user");
+        const justLoggedIn = sessionStorage.getItem("justLoggedIn");
+        const justLoggedOut = sessionStorage.getItem("justLoggedOut");
+
         if (token && user) {
             try {
                 const parsedUser = JSON.parse(user);
                 setIsAuth(true);
                 setUserName(parsedUser?.name || "User");
+
+                // If we just logged in, show toast here (after redirect)
+                if (justLoggedIn) {
+                    toast.success(`Welcome back, ${parsedUser.name || 'User'}!`);
+                    sessionStorage.removeItem("justLoggedIn");
+                }
             } catch (e) {
                 localStorage.clear();
             }
+        }
+
+        // If we just logged out, show toast here
+        if (justLoggedOut) {
+            toast.success("Logged out safely");
+            sessionStorage.removeItem("justLoggedOut");
         }
     }, []);
 
@@ -59,7 +74,7 @@ const Form = () => {
 
     const handleToggle = () => {
         setIsFlipped(!isFlipped);
-        setStep(1); // Reset to signup step if they flip
+        setStep(1);
         setSignupError("");
         setLoginError("");
         setSignupData({ name: "", email: "", password: "" });
@@ -70,7 +85,6 @@ const Form = () => {
     const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const validatePassword = (password) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(password);
 
-    // STEP 1: Send OTP
     const handleSignupSubmit = async (e) => {
         e.preventDefault();
         setSignupError("");
@@ -90,9 +104,9 @@ const Form = () => {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to send code");
-            
+
             toast.success("Code sent to your email!", { id: loadingToast });
-            setStep(2); // Move to OTP step
+            setStep(2);
             setTimer(60);
         } catch (err) {
             toast.error(err.message, { id: loadingToast });
@@ -101,7 +115,6 @@ const Form = () => {
         }
     };
 
-    // STEP 2: Verify OTP and Create User
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         if (!otpInput) return toast.error("Please enter the code");
@@ -109,7 +122,6 @@ const Form = () => {
         setIsSigningUp(true);
         const loadingToast = toast.loading("Verifying code...");
         try {
-            // 1. Verify OTP
             const verifyRes = await fetch("/api/auth/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -118,7 +130,6 @@ const Form = () => {
             const verifyData = await verifyRes.json();
             if (!verifyRes.ok) throw new Error(verifyData.message || "Invalid or expired code");
 
-            // 2. If OTP valid, create the account
             const signupRes = await fetch("/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -129,7 +140,7 @@ const Form = () => {
 
             toast.success("Verified! Please login 🎉", { id: loadingToast });
             setStep(1);
-            setIsFlipped(false); // Flip back to Login
+            setIsFlipped(false);
         } catch (err) {
             toast.error(err.message, { id: loadingToast });
         } finally {
@@ -137,6 +148,7 @@ const Form = () => {
         }
     };
 
+    // --- UPDATED LOGIN SUBMIT ---
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         setLoginError("");
@@ -151,11 +163,15 @@ const Form = () => {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || "Invalid credentials");
+            
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
+            
+            // Set flag for the welcome toast
+            sessionStorage.setItem("justLoggedIn", "true");
+            
             setIsAuth(true);
             setUserName(data.user?.name || "User");
-            toast.success("Welcome back!");
             router.push("/");
         } catch (err) {
             toast.error(err.message);
@@ -164,11 +180,22 @@ const Form = () => {
         }
     };
 
+    // --- UPDATED LOGOUT ---
     const handleLogout = () => {
         setIsLoggingOut(true);
         localStorage.clear();
-        toast.success("Logged out safely");
-        setTimeout(() => (router.push("/")), 800);
+        // Set flag for the logout toast
+        sessionStorage.setItem("justLoggedOut", "true");
+        setIsAuth(false);
+        
+        // Give it a tiny delay to ensure storage is cleared before redirect
+        setTimeout(() => {
+            router.push("/");
+            // Force a slight state refresh if already on home
+            if (window.location.pathname === "/") {
+                window.location.reload();
+            }
+        }, 500);
     };
 
     const handleDashboardClick = () => {
@@ -178,6 +205,7 @@ const Form = () => {
 
     return (
         <StyledWrapper $primary={primaryColor}>
+            {/* Note: Ensure <Toaster /> is also in your Root Layout.js for better persistence */}
             <Toaster position="top-center" reverseOrder={false} />
             <div className="wrapper">
                 {isAuth ? (
@@ -187,7 +215,7 @@ const Form = () => {
                         <div className="status-badge">SESSION ACTIVE</div>
                         <div className="action-area">
                             <button className="main-btn" onClick={handleDashboardClick} disabled={isEnteringDashboard}>
-                                {isEnteringDashboard ? <Loader2 size={18} className="spinner-icon" /> : <Layout size={18} />} 
+                                {isEnteringDashboard ? <Loader2 size={18} className="spinner-icon" /> : <Layout size={18} />}
                                 {isEnteringDashboard ? "Loading..." : "Dashboard"}
                             </button>
                             <button className="main-btn logout-btn" onClick={handleLogout} disabled={isLoggingOut}>
@@ -252,7 +280,7 @@ const Form = () => {
                                 </div>
                             </div>
 
-                            {/* SIGNUP BACK (Handles Step 1 and 2) */}
+                            {/* SIGNUP BACK */}
                             <div className="flip-card__back">
                                 {step === 1 ? (
                                     <>
@@ -313,7 +341,7 @@ const Form = () => {
                                 ) : (
                                     <>
                                         <div className="title">Verify Email</div>
-                                        <p className="subtitle" style={{marginBottom: "20px"}}>Enter the 6-digit code sent to <br/><strong>{signupData.email}</strong></p>
+                                        <p className="subtitle" style={{ marginBottom: "20px" }}>Enter the 6-digit code sent to <br /><strong>{signupData.email}</strong></p>
                                         <form onSubmit={handleVerifyOtp} className="form-content">
                                             <div className="input-group">
                                                 <label><ShieldCheck size={14} /> Verification Code</label>
@@ -321,7 +349,7 @@ const Form = () => {
                                                     type="text"
                                                     maxLength="6"
                                                     placeholder="000000"
-                                                    style={{textAlign: 'center', letterSpacing: '8px', fontSize: '1.2rem'}}
+                                                    style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '1.2rem' }}
                                                     value={otpInput}
                                                     onChange={(e) => setOtpInput(e.target.value)}
                                                 />
@@ -329,23 +357,23 @@ const Form = () => {
                                             <button className="main-btn" disabled={isSigningUp}>
                                                 {isSigningUp ? "Verifying..." : "Verify & Signup"} <CheckCircle size={18} />
                                             </button>
-                                            
-                                            <div style={{textAlign: 'center', marginTop: '10px'}}>
+
+                                            <div style={{ textAlign: 'center', marginTop: '10px' }}>
                                                 {timer > 0 ? (
-                                                    <span style={{fontSize: '0.8rem', opacity: 0.6}}>Resend code in {timer}s</span>
+                                                    <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Resend code in {timer}s</span>
                                                 ) : (
-                                                    <span 
+                                                    <span
                                                         onClick={handleSignupSubmit}
-                                                        style={{fontSize: '0.8rem', color: primaryColor, cursor: 'pointer', fontWeight: 'bold'}}
+                                                        style={{ fontSize: '0.8rem', color: primaryColor, cursor: 'pointer', fontWeight: 'bold' }}
                                                     >
                                                         Resend Code
                                                     </span>
                                                 )}
                                             </div>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => setStep(1)} 
-                                                style={{background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', cursor: 'pointer'}}
+                                            <button
+                                                type="button"
+                                                onClick={() => setStep(1)}
+                                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', cursor: 'pointer' }}
                                             >
                                                 ← Back to Signup
                                             </button>
@@ -360,7 +388,6 @@ const Form = () => {
         </StyledWrapper>
     );
 };
-
 // ... (Rest of your StyledWrapper CSS remains exactly the same)
 const StyledWrapper = styled.div`
   min-height: 90vh;
