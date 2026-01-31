@@ -46,7 +46,7 @@ const TopicQuizManager = () => {
   const [userAnswers, setUserAnswers] = useState({});
   const [isFinished, setIsFinished] = useState(false);
 
-  const BASE_URL = 'https://noneditorial-professionally-serena.ngrok-free.dev';
+  const BASE_URL = 'https://quizbyaiservice-production.up.railway.app';
 
   // 1. Initial Fetch: Topics
   useEffect(() => {
