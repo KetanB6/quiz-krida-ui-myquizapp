@@ -126,52 +126,24 @@
     scrollbar-color: #3b82f6 rgba(15, 23, 42, 0.6);
   }
 }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
 
 /* 7. Prevent horizontal scroll jitters */
 html, body {
   overflow-x: hidden;
+  overflow-y: overlay;
   scrollbar-gutter: stable; /* Prevents layout jump when scrollbar appears */
+  margin: 0;
+  padding: 0;
+height: auto;
+min-height: 100%;
+
 }
 
-/* 3D Rotating Carousel Styles */
-.scene {
-  perspective: 1000px; /* Depth of the 3D field */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-.carousel {
-  width: 200px;
-  height: 300px;
-  position: relative;
-  transform-style: preserve-3d;
-  animation: spin 20s linear infinite;
-}
-
-/* Stop motion when user hovers over any part of the carousel */
-.carousel:hover {
-  animation-play-state: paused;
-}
-
-.card {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: #3498db;
-  border: 2px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: white;
-  border-radius: 10px;
-  /* Position cards in a circle: 360 / 5 = 72 degrees each */
-  transform: rotateY(calc(var(--i) * 72deg)) translateZ(300px);
-}
-
-@keyframes spin {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
-}

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Clock, AlertCircle, Plus, Loader2, Fingerprint, Eye,
   HelpCircle, ChevronLeft, Edit3, Save, Trash2, Inbox, FileText, X, Trophy, Download,
-  QrCode, Share2, Search, Radio, MoreVertical
+  QrCode, Share2, Search, Radio, MoreVertical, Lock, Globe
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -377,7 +377,7 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
             </EmptyState>
           ) : (
             questions.map((q, index) => (
-              <FullQuestionItem key={index}>
+              <QuestionPreviewCard key={index}>
                 <div className="q-label"><HelpCircle size={14} /> Question {index + 1}</div>
                 <p className="q-text">{q.question}</p>
                 <div className="options-grid">
@@ -386,7 +386,7 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
                   <span className={q.correctOpt === 'opt3' ? 'correct' : ''}>C: {q.opt3}</span>
                   <span className={q.correctOpt === 'opt4' ? 'correct' : ''}>D: {q.opt4}</span>
                 </div>
-              </FullQuestionItem>
+              </QuestionPreviewCard>
             ))
           )}
         </QuestionsContainer>
@@ -517,7 +517,7 @@ const UserDashboard = () => {
   const [viewResultId, setViewResultId] = useState(null);
   const [viewQRId, setViewQRId] = useState(null);
   const [switchingStatusId, setSwitchingStatusId] = useState(null);
-  const [activeMenuId, setActiveMenuId] = useState(null); 
+  const [activeMenuId, setActiveMenuId] = useState(null);
   const primaryColor = "#2563eb";
 
   useEffect(() => {
@@ -588,8 +588,8 @@ const UserDashboard = () => {
       method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
     });
     if (response.ok) {
-        setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
-        toast.success("Quiz deleted");
+      setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
+      toast.success("Quiz deleted");
     }
   };
 
@@ -653,26 +653,31 @@ const UserDashboard = () => {
               ) : (
                 <QuizGrid>
                   {filteredQuizzes.map((quiz) => (
-                    <StyledCard 
+                    <StyledCard
                       key={quiz.quizId}
                       style={{ zIndex: activeMenuId === quiz.quizId ? 100 : 1 }}
                     >
                       <div className="card-header">
                         <div className="icon-bg"><BookOpen size={20} color={primaryColor} /></div>
-                        
+
                         <ActionWrapper>
-                          <StatusBadge 
-                             onClick={() => handleToggleStatus(quiz.quizId)} 
-                             $isActive={String(quiz.status) === "true"} 
-                             disabled={switchingStatusId === quiz.quizId}
+                          {/* The Static Status Pill (Matches the DataGrid style) */}
+                          <div className={`status-pill ${quiz.isPrivate ? 'private' : 'public'}`}>
+                            {quiz.isPrivate ? <Lock size={12} /> : <Globe size={12} />}
+                            <span>{quiz.isPrivate ? 'Private' : 'Public'}</span>
+                          </div>
+                          <StatusBadge
+                            onClick={() => handleToggleStatus(quiz.quizId)}
+                            $isActive={String(quiz.status) === "true"}
+                            disabled={switchingStatusId === quiz.quizId}
                           >
-                            {switchingStatusId === quiz.quizId ? <Loader2 size={12} className="spinner" /> : (String(quiz.status) === "true" ? "Active" : "Inactive")}
+                            {switchingStatusId === quiz.quizId ? <Loader2 size={12} className="spinner" /> : (String(quiz.status) === "true" ? "END" : "START")}
                           </StatusBadge>
 
                           <div style={{ position: 'relative' }}>
                             <MoreBtn onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(activeMenuId === quiz.quizId ? null : quiz.quizId);
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === quiz.quizId ? null : quiz.quizId);
                             }}>
                               <MoreVertical size={20} />
                             </MoreBtn>
@@ -729,13 +734,395 @@ const UserDashboard = () => {
 };
 
 /* --- STYLES --- */
+/* --- EDIT MODULE STYLES --- */
+/* --- FULL WIDTH REFINED EDIT MODULE --- */
+
+const EditLayout = styled.div`
+  display: flex;
+  flex-direction: column; /* Stack settings on top of questions */
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+`;
+
+const ConfigCard = styled.div`
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #3b82f6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Title takes more space than Duration */
+    gap: 24px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-left: 4px;
+      }
+
+      input {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 14px 18px;
+        border-radius: 16px;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+
+        &:focus {
+          border-color: #3b82f6;
+          background: rgba(15, 23, 42, 0.8);
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+          outline: none;
+        }
+      }
+    }
+  }
+`;
+
+
+
+const EditHeaderSection = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 20px;
+  gap: 20px;
+
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .edit-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(to right, #ffffff, #64748b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .action-btns {
+    display: flex;
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    .action-btns { width: 100%; justify-content: space-between; }
+  }
+`;
+
+/* --- BUTTONS & ACTIONS --- */
+
+/* --- SHARED BUTTON BASE WITH SHINE EFFECT --- */
+
+const ActionButtonBase = `
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: 0.6s;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+const SaveBtn = styled(motion.button)`
+  ${ActionButtonBase}
+  background: rgba(59, 130, 246, 0.15); 
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    color: white;
+  }
+`;
+
+const AddQuestionBtn = styled.button`
+  ${ActionButtonBase}
+  background: rgba(59, 130, 246, 0.05);
+  border: 2px dashed rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  margin-top: 10px;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-style: solid; /* Switches from dashed to solid on hover */
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+  }
+`;
+
+const BackButton = styled.button`
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 10px 20px;
+  border-radius: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover { background: rgba(255, 255, 255, 0.08); color: white; }
+`;
+
+const DeleteSmallBtn = styled.button`
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover { background: #ef4444; color: white; transform: rotate(90deg); }
+`;
+
+/* --- PREVIEW STYLES --- */
+
+/* --- ENHANCED PREVIEW STYLES --- */
+
+const QuestionsContainer = styled.div`
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 0;
+  
+  .preview-header {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 24px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+`;
+
+const QuestionPreviewCard = styled.div`
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  padding: 28px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .q-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #3b82f6;
+    margin-bottom: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    width: fit-content;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .q-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+
+    span {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      position: relative;
+
+      &.correct {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 0.4);
+        color: #10b981;
+        font-weight: 600;
+        
+        &::after {
+          content: '✓';
+          position: absolute;
+          right: 15px;
+          font-weight: 800;
+        }
+      }
+    }
+  }
+`;
 
 const ActionWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px; /* Slightly tighter gap for smaller elements */
+ 
+
+  /* Shared base style for both Pill and Button */
+  .status-pill, ${() => StatusBadge} {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px; /* Reduced padding */
+    border-radius: 8px; /* Slightly tighter corners for smaller size */
+    font-size: 0.7rem; /* Smaller font */
+    font-weight: 700;
+    height: 28px; /* Fixed smaller height */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .status-pill {
+    &.public {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    &.private {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+  }
 `;
 
+const StatusBadge = styled.button`
+  cursor: pointer;
+  background: ${props => props.$isActive 
+    ? 'rgba(239, 68, 68, 0.1)' 
+    : 'rgba(16, 185, 129, 0.1)'};
+  
+  color: ${props => props.$isActive ? '#ef4444' : '#10b981'};
+  
+  border: 1px solid ${props => props.$isActive 
+    ? 'rgba(239, 68, 68, 0.4)' 
+    : 'rgba(16, 185, 129, 0.4)'};
+
+  &:hover:not(:disabled) {
+    background: ${props => props.$isActive 
+      ? 'rgba(239, 68, 68, 0.2)' 
+      : 'rgba(16, 185, 129, 0.2)'};
+    border-color: ${props => props.$isActive ? '#ef4444' : '#10b981'};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px ${props => props.$isActive 
+      ? 'rgba(239, 68, 68, 0.15)' 
+      : 'rgba(16, 185, 129, 0.15)'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+`;
 const MoreBtn = styled.button`
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -756,19 +1143,20 @@ const MoreBtn = styled.button`
 
 const DropdownMenu = styled(motion.div)`
   position: absolute;
-  top: 110%;
+  top: 40px;
   right: 0;
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(30, 41, 59, 0.98); /* Solid enough to cover content */
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   width: 210px;
-  z-index: 1000;
-  overflow: hidden;
+  z-index: 9999;
   padding: 6px;
-  transform-origin: top right;
+  
+  /* ADD THIS: Prevents the menu from 'stretching' the parent card's height */
+  height: max-content;
+  pointer-events: auto;
 `;
 
 const MenuOption = styled.button`
@@ -860,10 +1248,11 @@ const WhatsAppBtn = styled.button` width: 100%; background: #25d366; color: whit
 
 const DashboardWrapper = styled.div`
   max-width: 1200px;
-  margin: 0 auto;
   padding: 40px 20px;
   color: #f8fafc;
-  margin-top:-50px;
+  margin: 0 auto;
+  height: auto; 
+  overflow: visible;
   .main-header {
     display: flex;
     flex-direction: row; 
@@ -890,7 +1279,8 @@ const StyledCard = styled(motion.div)`
   padding: 20px;
   backdrop-filter: blur(10px);
   position: relative;
-  overflow: visible; /* CRITICAL: Allows dropdown to pop out */
+  /* CHANGE: This ensures the dropdown doesn't trigger internal scrollbars */
+  overflow: visible !important; 
   transition: transform 0.2s ease, border-color 0.2s ease;
 
   &:hover {
@@ -905,7 +1295,7 @@ const StyledCard = styled(motion.div)`
 const QuestionEditBox = styled.div` background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 18px; margin-bottom: 15px; @media (min-width: 640px) { padding: 20px; } .q-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; color: #3b82f6; font-weight: 700; } .correct-select { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; select { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; outline: none; } } .q-input { width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; min-height: 80px; resize: vertical; &:focus { border-color: #3b82f6; outline: none; } } .options-grid-edit { display: grid; grid-template-columns: 1fr; gap: 10px; @media (min-width: 640px) { grid-template-columns: 1fr 1fr; } .opt-field { display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid #334155; padding: 10px; border-radius: 10px; .opt-label { color: #3b82f6; font-weight: 800; font-size: 0.8rem; } input { background: none; border: none; color: white; width: 100%; outline: none; font-size: 0.9rem; } &:focus-within { border-color: #3b82f6; } } } `;
 
 const CreateBtn = styled(motion.button)` display: flex; align-items: center; gap: 10px; background: ${p => p.$primary}; padding: 10px 20px; border-radius: 12px; color: white; border: none; font-weight: 700; cursor: pointer; `;
-const StatusBadge = styled.button` padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; border: none; font-weight: 700; background: ${p => p.$isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color: ${p => p.$isActive ? '#10b981' : '#f87171'}; cursor: pointer; display: flex; align-items: center; gap: 4px; &:disabled { opacity: 0.8; cursor: not-allowed; } .spinner { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } `;
+
 const LoadingState = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; .spinner { animation: spin 1s linear infinite; } `;
 const DataGrid = styled.div` display: flex; gap: 10px; margin-bottom: 15px; .data-item { font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; } `;
 const SeeQuestionBtn = styled.button` width: 100%; background: rgba(255,255,255,0.05); color: #94a3b8; padding: 10px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:hover { background: ${p => p.$primary}; color: white; } `;

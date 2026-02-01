@@ -51,6 +51,13 @@ const QuickActions = () => {
       icon: <Globe size={26} />, 
       color: "#10b981", 
       onClick: () => router.push('/public-library') 
+    },
+    { 
+      title: "Quick Quize Maker", 
+      desc: "Create a quiz in seconds using AI-generated content.", 
+      icon: <Sparkles size={26} />, 
+      color: "#f59e0b", 
+      onClick: () => router.push('/quick-quiz-maker') 
     }
   ];
 
