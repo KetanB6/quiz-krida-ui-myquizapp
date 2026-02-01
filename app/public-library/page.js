@@ -13,7 +13,7 @@ const PublicQuizzes = () => {
 
   const fetchQuizzes = async (isInitial = false) => {
     try {
-      const response = await fetch('https://noneditorial-professionally-serena.ngrok-free.dev/Public', {
+      const response = await fetch('https://quiz-krida.onrender.com/Public', {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       const data = await response.json();

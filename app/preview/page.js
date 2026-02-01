@@ -15,7 +15,7 @@ const QuizPreviewPage = () => {
   useEffect(() => {
     const fetchFullQuiz = async () => {
       try {
-        const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Logged/Preview/${id}`, {
+        const response = await fetch(`https://quiz-krida.onrender.com/Logged/Preview/${id}`, {
           method: 'GET',
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });

@@ -36,7 +36,7 @@ const AIGenerator = () => {
             const { ip } = await res.json();
             
             // LOGGING IP TO CONSOLE AS REQUESTED
-            console.log("Current Device IP:", ip);
+           // console.log("Current Device IP:", ip);
 
             const storageKey = `quiz_limit_${ip}`;
             const localData = JSON.parse(localStorage.getItem(storageKey) || '{"count": 0, "resetTime": 0}');

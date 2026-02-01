@@ -93,7 +93,7 @@ const PlayQuiz = () => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`https://noneditorial-professionally-serena.ngrok-free.dev/Play/${joinData.quizId}/${joinData.participantName}`, {
+            const response = await fetch(`https://quiz-krida.onrender.com/Play/${joinData.quizId}/${joinData.participantName}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ const PlayQuiz = () => {
 
         setIsLoading(true);
         try {
-            const response = await fetch('https://noneditorial-professionally-serena.ngrok-free.dev/Play/Submit', {
+            const response = await fetch('https://quiz-krida.onrender.com/Play/Submit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
