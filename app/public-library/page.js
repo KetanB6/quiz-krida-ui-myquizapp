@@ -40,7 +40,7 @@ const PublicQuizzes = () => {
   if (loading) return (
     <LoadingWrapper>
       <Loader2 size={32} className="spinner" />
-      🌌 Syncing with the Arena...
+       Syncing with the Server
     </LoadingWrapper>
   );
 
