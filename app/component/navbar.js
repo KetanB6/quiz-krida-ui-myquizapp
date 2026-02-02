@@ -39,7 +39,7 @@ const Navbar = () => {
 
         {/* RIGHT: Navigation Actions */}
         <div className="actions-section">
-          {/* Desktop Links - Optimized for high-end spacing */}
+          {/* Desktop Links */}
           <div className="desktop-links">
             <Link href="/">
               <ButtonHome />
@@ -64,18 +64,15 @@ const Navbar = () => {
 const NavContainer = styled.nav`
   position: sticky;
   top: 0;
-  z-index: 1000; /* Higher z-index to stay above all content */
+  z-index: 1000;
   width: 100%;
   
-  /* Dark mode glassmorphism */
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  -webkit-backdrop-filter: blur(12px);
   
-  /* Thin industrial border */
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   
-  /* Responsive padding */
   padding: 0 1rem;
   @media (min-width: 768px) {
     padding: 0 2.5rem;
@@ -85,7 +82,6 @@ const NavContainer = styled.nav`
     max-width: 1400px;
     margin: 0 auto;
     
-    /* Variable height for mobile vs desktop */
     height: 64px; 
     @media (min-width: 768px) {
       height: 85px; 
@@ -98,24 +94,20 @@ const NavContainer = styled.nav`
 
   .logo-section {
     cursor: pointer;
-    flex-shrink: 0; /* Prevents logo from squishing on small screens */
+    flex-shrink: 0;
     transition: opacity 0.3s ease;
     
     &:hover {
       opacity: 0.8;
     }
 
-    /* Scaling the logo wrapper to ensure it fits mobile */
-    max-width: 140px;
-    @media (min-width: 768px) {
-      max-width: none;
-    }
+    /* REMOVED MOBILE SCALING: Keeping it identical to desktop */
+    max-width: none; 
   }
 
   .actions-section {
     display: flex;
     align-items: center;
-    /* Tighter gap on mobile to fit Home + Login buttons */
     gap: 0.75rem;
     @media (min-width: 768px) {
       gap: 1.5rem;
@@ -126,9 +118,7 @@ const NavContainer = styled.nav`
     display: flex;
     align-items: center;
     
-    /* On extremely small devices (< 400px), we hide the Home text 
-       to prevent the Login button from being pushed off.
-    */
+    /* Kept the safety hide for extremely small screens to prevent overlap */
     @media (max-width: 400px) {
       display: none;
     }

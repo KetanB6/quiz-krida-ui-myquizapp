@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Loader2, Edit3, Save, Trash2, FileText, X, QrCode, 
-  Search, MoreVertical, ChevronLeft, Download, ExternalLink, Activity
+  Search, MoreVertical, ChevronLeft, Download, ExternalLink, Activity, Users, Radio, AlertTriangle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -23,9 +23,63 @@ const spin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-/* --- COMPONENTS --- */
+const pulse = keyframes`
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+`;
 
-const QRModal = ({ quizId, quizTitle, onClose }) => {
+/* --- LIVE PARTICIPANTS MODAL --- */
+const LiveParticipantsModal = ({ quizId, onClose }) => {
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLive = () => {
+      fetch(`https://quiz-krida.onrender.com/Logged/LiveParticipants/${quizId}`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
+      .then(res => res.json())
+      .then(data => setParticipants(Array.isArray(data) ? data : []))
+      .finally(() => setLoading(false));
+    };
+
+    fetchLive();
+    const interval = setInterval(fetchLive, 5000); 
+    return () => clearInterval(interval);
+  }, [quizId]);
+
+  return (
+    <ModalOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <ModalContent onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+        <div className="modal-header">
+          <h3><Radio size={14} className="live-icon" /> LIVE_OPERATIONS_MONITOR</h3>
+          <button onClick={onClose}><X size={18} /></button>
+        </div>
+        {loading ? <Centered><Loader2 className="spinner" /></Centered> : (
+          <ScrollArea>
+            <ResultTable>
+              <thead><tr><th>OPERATOR_NAME</th><th>STATION_STATUS</th></tr></thead>
+              <tbody>
+                {participants.length > 0 ? participants.map((p, i) => (
+                  <tr key={i}>
+                    <td>{p.name}</td>
+                    <td className="success">ACTIVE_SESSION</td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan="2" style={{textAlign: 'center', color: '#444'}}>NO_ACTIVE_UPLINKS_DETECTED</td></tr>
+                )}
+              </tbody>
+            </ResultTable>
+          </ScrollArea>
+        )}
+      </ModalContent>
+    </ModalOverlay>
+  );
+};
+
+/* --- PREVIOUS MODALS (QR & Result) --- */
+const QRModal = ({ quizId, onClose }) => {
   const quizLink = `https://myquizapp-psi.vercel.app/play?id=${quizId}`;
   return (
     <ModalOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -92,7 +146,9 @@ const ResultModal = ({ quizId, quizTitle, onClose }) => {
                   <tr key={i}>
                     <td>{res.name}</td>
                     <td>{res.score}/{res.outOf}</td>
-                    <td className="success">{((res.score / res.outOf) * 100).toFixed(0)}%</td>
+                    <td className="success">
+                        {res.outOf > 0 ? ((res.score / res.outOf) * 100).toFixed(0) : 0}%
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -104,6 +160,18 @@ const ResultModal = ({ quizId, quizTitle, onClose }) => {
   );
 };
 
+/* --- EMPTY STATE COMPONENT --- */
+const EmptyView = ({ title, message, icon: Icon }) => (
+  <EmptyStateContainer initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <div className="warning-box">
+      {Icon && <Icon size={32} className="pulse" />}
+      <h3>{title}</h3>
+      <p>{message}</p>
+    </div>
+  </EmptyStateContainer>
+);
+
+/* --- EDIT MODULE --- */
 const EditQuizModule = ({ quizId, onBack }) => {
   const [quizInfo, setQuizInfo] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -168,44 +236,51 @@ const EditQuizModule = ({ quizId, onBack }) => {
         </div>
       </SectionCard>
 
-      {questions.map((q, idx) => (
-        <QuestionBox key={idx}>
-          <div className="q-head">
-            <span className="tag">NODE_INDEX: 0{idx+1}</span>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-               <label style={{ fontSize: '10px' }}>CORRECT_OPT:</label>
-               <select value={q.correctOpt} onChange={e => {
-                   const copy = [...questions]; copy[idx].correctOpt = e.target.value; setQuestions(copy);
-               }}>
-                 <option value="opt1">A</option><option value="opt2">B</option><option value="opt3">C</option><option value="opt4">D</option>
-               </select>
-               <button className="del-btn" onClick={() => {
-                 if(!q.isLocalOnly) setDeletedQnos([...deletedQnos, q.qno]);
-                 setQuestions(questions.filter((_, i) => i !== idx));
-               }}><Trash2 size={14}/></button>
-            </div>
-          </div>
-          <textarea value={q.question} onChange={e => {
-             const copy = [...questions]; copy[idx].question = e.target.value; setQuestions(copy);
-          }} placeholder="SYSTEM_PROMPT_ENTRY..." />
-          <div className="options-grid">
-            {['opt1','opt2','opt3','opt4'].map((o, i) => (
-              <div key={o} className="opt-input">
-                <label>{String.fromCharCode(65+i)}</label>
-                <input value={q[o]} onChange={e => {
-                  const copy = [...questions]; copy[idx][o] = e.target.value; setQuestions(copy);
-                }} />
+      {questions.length === 0 ? (
+        <EmptyView 
+          title="ZERO_NODES_DETECED" 
+          message="THIS_QUIZ_HAS_NO_ACTIVE_DATA_NODES. INITIALIZE A NODE TO POPULATE THE MODULE." 
+          icon={AlertTriangle} 
+        />
+      ) : (
+        questions.map((q, idx) => (
+          <QuestionBox key={idx}>
+            <div className="q-head">
+              <span className="tag">NODE_INDEX: 0{idx+1}</span>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <label style={{ fontSize: '10px' }}>CORRECT_OPT:</label>
+                  <select value={q.correctOpt} onChange={e => {
+                      const copy = [...questions]; copy[idx].correctOpt = e.target.value; setQuestions(copy);
+                  }}>
+                    <option value="opt1">A</option><option value="opt2">B</option><option value="opt3">C</option><option value="opt4">D</option>
+                  </select>
+                  <button className="del-btn" onClick={() => {
+                    if(!q.isLocalOnly) setDeletedQnos([...deletedQnos, q.qno]);
+                    setQuestions(questions.filter((_, i) => i !== idx));
+                  }}><Trash2 size={14}/></button>
               </div>
-            ))}
-          </div>
-        </QuestionBox>
-      ))}
+            </div>
+            <textarea value={q.question} onChange={e => {
+               const copy = [...questions]; copy[idx].question = e.target.value; setQuestions(copy);
+            }} placeholder="SYSTEM_PROMPT_ENTRY..." />
+            <div className="options-grid">
+              {['opt1','opt2','opt3','opt4'].map((o, i) => (
+                <div key={o} className="opt-input">
+                  <label>{String.fromCharCode(65+i)}</label>
+                  <input value={q[o]} onChange={e => {
+                    const copy = [...questions]; copy[idx][o] = e.target.value; setQuestions(copy);
+                  }} />
+                </div>
+              ))}
+            </div>
+          </QuestionBox>
+        ))
+      )}
     </motion.div>
   );
 };
 
 /* --- MAIN DASHBOARD --- */
-
 const UserDashboard = () => {
   const router = useRouter();
   const [quizzes, setQuizzes] = useState([]);
@@ -216,6 +291,7 @@ const UserDashboard = () => {
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [viewQRId, setViewQRId] = useState(null);
   const [viewResultId, setViewResultId] = useState(null);
+  const [viewLiveId, setViewLiveId] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [switchingStatusId, setSwitchingStatusId] = useState(null);
 
@@ -224,15 +300,19 @@ const UserDashboard = () => {
     if (userData) {
       const { email } = JSON.parse(userData);
       setUserEmail(email);
-      fetch(`https://quiz-krida.onrender.com/Logged?email=${email}`, { headers: { 'ngrok-skip-browser-warning': 'true' }})
-        .then(res => res.json())
-        .then(data => setQuizzes(data))
-        .finally(() => setLoading(false));
+      fetchData(email);
     }
     const close = () => setActiveMenuId(null);
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, []);
+
+  const fetchData = (email) => {
+    fetch(`https://quiz-krida.onrender.com/Logged?email=${email}`, { headers: { 'ngrok-skip-browser-warning': 'true' }})
+      .then(res => res.json())
+      .then(data => setQuizzes(data))
+      .finally(() => setLoading(false));
+  };
 
   const handleStatus = async (e, id, current) => {
     e.stopPropagation();
@@ -254,6 +334,7 @@ const UserDashboard = () => {
       <AnimatePresence>
         {viewQRId && <QRModal quizId={viewQRId} onClose={() => setViewQRId(null)} />}
         {viewResultId && <ResultModal quizId={viewResultId} quizTitle={quizzes.find(q=>q.quizId===viewResultId)?.quizTitle} onClose={() => setViewResultId(null)} />}
+        {viewLiveId && <LiveParticipantsModal quizId={viewLiveId} onClose={() => setViewLiveId(null)} />}
       </AnimatePresence>
 
       {editQuizId ? (
@@ -278,51 +359,63 @@ const UserDashboard = () => {
 
           {loading ? <Centered><Loader2 className="spinner" /></Centered> : (
             <Grid>
-              {filtered.map(quiz => (
-                <QuizCard key={quiz.quizId} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <div className="card-top">
-                    <div className="status-indicator">
-                        <StatusDot $active={String(quiz.status) === "true"} />
-                        <span>{String(quiz.status) === "true" ? "LIVE_ON_GRID" : "OFFLINE_STANDBY"}</span>
+              {filtered.length === 0 ? (
+                <EmptyView 
+                   title="NO_MODULES_DETECTED" 
+                   message="DATABASE_INDEX_RETURNED_NULL. INITIALIZE A NEW MODULE TO BEGIN OPERATIONS." 
+                   icon={Activity} 
+                />
+              ) : (
+                filtered.map(quiz => (
+                  <QuizCard key={quiz.quizId} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div className="card-top">
+                      <div className="status-indicator">
+                          <StatusDot $active={String(quiz.status) === "true"} />
+                          <span>{String(quiz.status) === "true" ? "LIVE_ON_GRID" : "OFFLINE_STANDBY"}</span>
+                      </div>
+                      <div className="menu-anchor">
+                        <button className="icon-btn" onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setActiveMenuId(activeMenuId === quiz.quizId ? null : quiz.quizId); 
+                        }}>
+                          <MoreVertical size={16} />
+                        </button>
+                        <AnimatePresence>
+                          {activeMenuId === quiz.quizId && (
+                            <Dropdown initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} onClick={e => e.stopPropagation()}>
+                              <button onClick={() => { setViewQRId(quiz.quizId); setActiveMenuId(null); }}><QrCode size={14}/> ACCESS_QR</button>
+                              <button onClick={() => { setViewLiveId(quiz.quizId); setActiveMenuId(null); }}><Users size={14}/> LIVE_NODES</button>
+                              <button onClick={() => { setEditQuizId(quiz.quizId); setActiveMenuId(null); }}><Edit3 size={14}/> RECONFIGURE</button>
+                              <button onClick={() => { setViewResultId(quiz.quizId); setActiveMenuId(null); }}><FileText size={14}/> VIEW_LOGS</button>
+                              <button className="danger" onClick={() => {
+                                  if(confirm("DESTRUCT_DATA_PERMANENTLY?")) {
+                                      fetch(`https://quiz-krida.onrender.com/Logged/Delete/${quiz.quizId}`, { method: 'DELETE' })
+                                      .then(() => setQuizzes(quizzes.filter(q => q.quizId !== quiz.quizId)));
+                                  }
+                              }}><Trash2 size={14}/> WIPE_NODE</button>
+                            </Dropdown>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
-                    <div className="menu-anchor">
-                      <button className="icon-btn" onClick={(e) => { e.stopPropagation(); setActiveMenuId(quiz.quizId); }}>
-                        <MoreVertical size={16} />
-                      </button>
-                      <AnimatePresence>
-                        {activeMenuId === quiz.quizId && (
-                          <Dropdown initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
-                            <button onClick={() => setViewQRId(quiz.quizId)}><QrCode size={14}/> ACCESS_QR</button>
-                            <button onClick={() => setEditQuizId(quiz.quizId)}><Edit3 size={14}/> RECONFIGURE</button>
-                            <button onClick={() => setViewResultId(quiz.quizId)}><FileText size={14}/> VIEW_LOGS</button>
-                            <button className="danger" onClick={() => {
-                                if(confirm("DESTRUCT_DATA_PERMANENTLY?")) {
-                                    fetch(`https://quiz-krida.onrender.com/Logged/Delete/${quiz.quizId}`, { method: 'DELETE' })
-                                    .then(() => setQuizzes(quizzes.filter(q => q.quizId !== quiz.quizId)));
-                                }
-                            }}><Trash2 size={14}/> WIPE_NODE</button>
-                          </Dropdown>
-                        )}
-                      </AnimatePresence>
+                    
+                    <h2 className="title">{quiz.quizTitle?.toUpperCase() || "NULL_ENTITY"}</h2>
+                    
+                    <div className="meta">
+                      <div className="meta-item"><span>ID</span> {quiz.quizId}</div>
+                      <div className="meta-item"><span>T_LIMIT</span> {quiz.timePerQ || 0}S</div>
+                      <div className="meta-item"><span>TYPE</span> {quiz.isPrivate ? "PRIVATE" : "PUBLIC"}</div>
                     </div>
-                  </div>
-                  
-                  <h2 className="title">{quiz.quizTitle?.toUpperCase() || "NULL_ENTITY"}</h2>
-                  
-                  <div className="meta">
-                    <div className="meta-item"><span>ID</span> {quiz.quizId}</div>
-                    <div className="meta-item"><span>T_LIMIT</span> {quiz.timePerQ || 0}S</div>
-                    <div className="meta-item"><span>TYPE</span> {quiz.isPrivate ? "PRIVATE" : "PUBLIC"}</div>
-                  </div>
 
-                  <div className="footer-btns">
-                    <GhostButton onClick={() => setSelectedQuizId(quiz.quizId)}>PREVIEW</GhostButton>
-                    <PrimaryButton onClick={(e) => handleStatus(e, quiz.quizId, quiz.status)}>
-                      {switchingStatusId === quiz.quizId ? "..." : (String(quiz.status) === "true" ? "DEACTIVATE" : "ACTIVATE")}
-                    </PrimaryButton>
-                  </div>
-                </QuizCard>
-              ))}
+                    <div className="footer-btns">
+                      <GhostButton onClick={() => setSelectedQuizId(quiz.quizId)}>PREVIEW</GhostButton>
+                      <PrimaryButton onClick={(e) => handleStatus(e, quiz.quizId, quiz.status)}>
+                        {switchingStatusId === quiz.quizId ? "..." : (String(quiz.status) === "true" ? "DEACTIVATE" : "ACTIVATE")}
+                      </PrimaryButton>
+                    </div>
+                  </QuizCard>
+                ))
+              )}
             </Grid>
           )}
         </>
@@ -342,24 +435,30 @@ const FullPreview = ({ quizId, onBack }) => {
     return (
         <div style={{ paddingBottom: '50px' }}>
             <SubHeader><button className="back-btn" onClick={onBack}><ChevronLeft size={16}/> EXIT_PREVIEW</button></SubHeader>
-            {loading ? <Centered><Loader2 className="spinner" /></Centered> : qs.map((q, i) => (
-                <QuestionBox key={i} style={{ opacity: 0.9 }}>
-                    <div className="q-head"><span className="tag">READ_ONLY: NODE_0{i+1}</span></div>
-                    <p style={{ margin: '20px 0', fontSize: '1.2rem', fontWeight: 'bold' }}>{q.question}</p>
-                    <div className="options-grid">
-                        {[q.opt1, q.opt2, q.opt3, q.opt4].map((o, idx) => (
-                            <div key={idx} className={`opt-preview ${q.correctOpt === `opt${idx+1}` ? 'correct' : ''}`}>
-                                <span className="p-tag">{String.fromCharCode(65+idx)}</span> {o}
-                            </div>
-                        ))}
-                    </div>
-                </QuestionBox>
-            ))}
+            {loading ? <Centered><Loader2 className="spinner" /></Centered> : (
+              qs.length === 0 ? (
+                <EmptyView title="VOID_CONTENT" message="THIS_MODULE_CONTAINS_NO_RENDERABLE_DATA." icon={FileText} />
+              ) : (
+                qs.map((q, i) => (
+                  <QuestionBox key={i} style={{ opacity: 0.9 }}>
+                      <div className="q-head"><span className="tag">READ_ONLY: NODE_0{i+1}</span></div>
+                      <p style={{ margin: '20px 0', fontSize: '1.2rem', fontWeight: 'bold' }}>{q.question}</p>
+                      <div className="options-grid">
+                          {[q.opt1, q.opt2, q.opt3, q.opt4].map((o, idx) => (
+                              <div key={idx} className={`opt-preview ${q.correctOpt === `opt${idx+1}` ? 'correct' : ''}`}>
+                                  <span className="p-tag">{String.fromCharCode(65+idx)}</span> {o}
+                              </div>
+                          ))}
+                      </div>
+                  </QuestionBox>
+                ))
+              )
+            )}
         </div>
     );
 };
 
-/* --- STYLES (ZOLVI BRUTALIST NOIR) --- */
+/* --- STYLES --- */
 
 const Container = styled.div`
   max-width: 1200px; margin: 0 auto; padding: 40px 20px; min-height: 100vh;
@@ -369,7 +468,6 @@ const Container = styled.div`
 const Header = styled.header`
   display: flex; flex-direction: column; gap: 20px; margin-bottom: 50px;
   @media (min-width: 768px) { flex-direction: row; justify-content: space-between; align-items: flex-end; }
-  
   .brand {
     .status-tag { font-size: 10px; color: #555; letter-spacing: 2px; margin-bottom: 5px; }
     h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
@@ -379,12 +477,9 @@ const Header = styled.header`
 
 const SearchContainer = styled.div`
   display: flex; align-items: center; background: #080808; border: 1px solid #1a1a1a; 
-  padding: 15px 20px; margin-bottom: 40px; position: relative;
-  overflow: hidden;
-
+  padding: 15px 20px; margin-bottom: 40px; position: relative; overflow: hidden;
   input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-left: 15px; font-family: inherit; font-size: 14px; }
   color: #444;
-
   &::after {
     content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
     background: #fff; opacity: 0.1; animation: ${scanline} 3s linear infinite;
@@ -392,9 +487,7 @@ const SearchContainer = styled.div`
 `;
 
 const Grid = styled.div` 
-  display: grid; 
-  grid-template-columns: 1fr; 
-  gap: 20px; 
+  display: grid; grid-template-columns: 1fr; gap: 20px; 
   @media (min-width: 768px) { grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 1100px) { grid-template-columns: repeat(3, 1fr); }
 `;
@@ -403,18 +496,19 @@ const QuizCard = styled(motion.div)`
   background: #050505; border: 1px solid #1a1a1a; padding: 30px; 
   display: flex; flex-direction: column; transition: 0.3s;
   &:hover { border-color: #444; transform: translateY(-2px); }
-
   .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
   .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #555; font-weight: 800; letter-spacing: 1px; }
   .title { font-size: 1.4rem; font-weight: 900; margin-bottom: 20px; min-height: 40px; line-height: 1.2; }
-  
   .meta { 
     display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 30px; padding: 15px 0; border-top: 1px solid #111; border-bottom: 1px solid #111;
     .meta-item { font-size: 10px; color: #fff; font-weight: 800; span { color: #444; margin-right: 5px; } }
   }
-
   .footer-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .icon-btn { background: none; border: none; color: #444; cursor: pointer; &:hover { color: #fff; } }
+  .icon-btn { 
+      background: none; border: none; color: #444; cursor: pointer; padding: 5px; 
+      &:hover { color: #fff; } 
+  }
+  .menu-anchor { position: relative; }
 `;
 
 const StatusDot = styled.div` width: 8px; height: 8px; border-radius: 50%; background: ${p => p.$active ? "#00FF41" : "#FF4444"}; box-shadow: 0 0 10px ${p => p.$active ? "#00FF4155" : "#FF444455"}; `;
@@ -433,14 +527,15 @@ const GhostButton = styled.button`
 `;
 
 const ModalOverlay = styled(motion.div)`
-  position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(5px);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(10px);
 `;
 
 const ModalContent = styled.div`
   background: #000; border: 1px solid #222; padding: 30px; width: 100%; position: relative;
   .modal-header { 
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; 
-    h3 { font-size: 12px; font-weight: 900; letter-spacing: 2px; }
+    h3 { font-size: 12px; font-weight: 900; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
+    .live-icon { color: #ff0000; animation: ${pulse} 1.5s infinite; }
     button { background: none; border: none; color: #555; cursor: pointer; &:hover { color: #fff; } }
   }
   .qr-container { background: #fff; padding: 20px; display: flex; justify-content: center; margin-bottom: 20px; }
@@ -449,7 +544,7 @@ const ModalContent = styled.div`
 `;
 
 const Dropdown = styled(motion.div)`
-  position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid #000; padding: 5px; z-index: 50; width: 180px; box-shadow: 10px 10px 0 #000;
+  position: absolute; right: 0; top: 100%; margin-top: 10px; background: #fff; border: 1px solid #000; padding: 5px; z-index: 9999; width: 180px; box-shadow: 10px 10px 0 #000;
   button { 
     width: 100%; text-align: left; padding: 12px; background: transparent; border: none; font-family: inherit; font-size: 11px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #000;
     &:hover { background: #000; color: #fff; }
@@ -460,56 +555,71 @@ const Dropdown = styled(motion.div)`
 const QuestionBox = styled.div`
   border: 1px solid #1a1a1a; padding: 30px; margin-bottom: 20px; background: #050505;
   .q-head { 
-    display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
-    @media (min-width: 600px) { flex-direction: row; justify-content: space-between; align-items: center; }
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
     .tag { font-size: 10px; font-weight: 800; background: #111; padding: 4px 10px; color: #fff; }
     select { background: #000; color: #fff; border: 1px solid #222; padding: 5px 10px; font-family: inherit; font-size: 12px; outline: none; }
     .del-btn { background: #111; border: 1px solid #222; color: #ff4444; padding: 6px; cursor: pointer; &:hover { background: #ff4444; color: #fff; } }
   }
-  textarea { width: 100%; background: #000; border: 1px solid #1a1a1a; color: #fff; padding: 20px; margin-bottom: 20px; font-family: inherit; font-size: 15px; outline: none; min-height: 100px; &:focus { border-color: #444; } }
+  textarea { width: 100%; background: #000; border: 1px solid #1a1a1a; color: #fff; padding: 20px; margin-bottom: 20px; font-family: inherit; font-size: 15px; outline: none; min-height: 100px; }
   .options-grid { 
-    display: grid; grid-template-columns: 1fr; gap: 10px; 
-    @media (min-width: 700px) { grid-template-columns: 1fr 1fr; }
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; 
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
     .opt-input { 
       display: flex; align-items: center; background: #000; border: 1px solid #1a1a1a; padding: 5px 15px;
       label { width: 20px; font-weight: 900; color: #444; font-size: 12px; }
       input { background: transparent; border: none; color: #fff; width: 100%; padding: 12px; font-family: inherit; outline: none; font-size: 14px; }
-      &:focus-within { border-color: #444; }
     }
     .opt-preview { 
         padding: 15px; border: 1px solid #1a1a1a; font-size: 14px; color: #888; display: flex; align-items: center; gap: 10px;
-        .p-tag { font-size: 10px; font-weight: 900; color: #444; }
-        &.correct { border-color: #fff; background: #fff; color: #000; font-weight: 900; .p-tag { color: #888; } } 
+        &.correct { border-color: #fff; background: #fff; color: #000; font-weight: 900; } 
     }
   }
 `;
 
 const SectionCard = styled.div`
   border: 1px solid #1a1a1a; padding: 30px; margin-bottom: 30px; background: #050505;
-  .grid { display: grid; grid-template-columns: 1fr; gap: 20px; @media (min-width: 600px) { grid-template-columns: 1fr 1fr; } }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; @media (max-width: 600px) { grid-template-columns: 1fr; } }
 `;
 
 const FormGroup = styled.div`
   label { display: block; font-size: 10px; color: #444; font-weight: 800; margin-bottom: 10px; letter-spacing: 1px; }
-  input { width: 100%; background: #000; border: 1px solid #1a1a1a; padding: 14px; color: #fff; font-family: inherit; outline: none; &:focus { border-color: #444; } }
+  input { width: 100%; background: #000; border: 1px solid #1a1a1a; padding: 14px; color: #fff; font-family: inherit; outline: none; }
 `;
 
 const SubHeader = styled.div`
-  display: flex; flex-direction: column; gap: 20px; margin-bottom: 40px;
-  @media (min-width: 768px) { flex-direction: row; justify-content: space-between; align-items: center; }
-  .back-btn { background: none; border: none; color: #fff; font-weight: 900; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: 1px; &:hover { color: #777; } }
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
+  @media (max-width: 600px) { flex-direction: column; gap: 20px; align-items: flex-start; }
+  .back-btn { background: none; border: none; color: #fff; font-weight: 900; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 10px; font-size: 11px; }
   .actions { display: flex; gap: 15px; }
 `;
 
 const ResultTable = styled.table`
   width: 100%; border-collapse: collapse; min-width: 500px;
   th, td { text-align: left; padding: 15px; border-bottom: 1px solid #111; font-size: 12px; }
-  th { color: #444; text-transform: uppercase; letter-spacing: 1px; font-weight: 900; }
+  th { color: #444; text-transform: uppercase; font-weight: 900; }
   .success { color: #00FF41; font-weight: 900; }
 `;
 
 const ScrollArea = styled.div` overflow-x: auto; margin-top: 20px; border: 1px solid #111; `;
 
 const Centered = styled.div` display: flex; align-items: center; justify-content: center; min-height: 300px; .spinner { animation: ${spin} 1s linear infinite; } `;
+
+const EmptyStateContainer = styled(motion.div)`
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  border: 1px dashed #222;
+  background: #050505;
+  text-align: center;
+
+  .warning-box {
+    max-width: 400px;
+    h3 { font-size: 14px; letter-spacing: 3px; margin: 15px 0 10px 0; color: #fff; }
+    p { font-size: 10px; color: #444; line-height: 1.6; font-weight: 800; }
+    .pulse { color: #444; animation: ${pulse} 2s infinite ease-in-out; }
+  }
+`;
 
 export default UserDashboard;

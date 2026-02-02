@@ -232,7 +232,7 @@ const Form = () => {
                                         <label><Mail size={12} /> EMAIL_LINK</label>
                                         <input
                                             type="email"
-                                            placeholder="USER@ZOLVI.NETWORK"
+                                            placeholder="USER@GMAIL.COM"
                                             value={loginData.email}
                                             onChange={(e) => { setLoginData({ ...loginData, email: e.target.value }); setLoginError(""); }}
                                         />
