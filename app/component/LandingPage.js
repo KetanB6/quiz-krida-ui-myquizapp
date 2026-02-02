@@ -15,6 +15,10 @@ const LandingPage = () => {
         featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    function getRandomNumber() {
+        return Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000;
+    }
+
     return (
         <PageWrapper>
             {/* Background is handled by AppBackground in layout.js */}
@@ -91,9 +95,7 @@ const LandingPage = () => {
                 <QuickActions />
             </CardsWrapper>
 
-            const getRandomNumber = () =>
-            Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000;
-
+        
             <StatsSection>
                 <div className="stats-header">
                     <h2>DESIGNED FOR <span className="gradient">PERFORMANCE.</span></h2>
