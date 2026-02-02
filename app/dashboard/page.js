@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import styled from 'styled-components';
+import styled, {keyframes} from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Clock, AlertCircle, Plus, Loader2, Fingerprint, Eye,
@@ -503,6 +503,33 @@ const LiveParticipantsModal = ({ quizId, onClose }) => {
     </ModalOverlay>
   );
 };
+const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, title }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <ModalOverlay
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onCancel}
+      >
+        <ModalContent
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="warning-icon"><AlertTriangle size={32} color="#ef4444" /></div>
+          <h3>Delete Quiz?</h3>
+          <p>Are you sure you want to delete <strong>"{title}"</strong>? This action cannot be undone.</p>
+          <div className="modal-actions">
+            <button className="cancel-btn" onClick={onCancel}>Cancel</button>
+            <button className="confirm-btn" onClick={onConfirm}>Delete Quiz</button>
+          </div>
+        </ModalContent>
+      </ModalOverlay>
+    )}
+  </AnimatePresence>
+);
 
 /* --- MAIN DASHBOARD --- */
 const UserDashboard = () => {
@@ -511,6 +538,7 @@ const UserDashboard = () => {
   const router = useRouter();
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false); // NEW: Loader state for New Quiz
   const [userEmail, setUserEmail] = useState("");
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [editQuizId, setEditQuizId] = useState(null);
@@ -518,6 +546,8 @@ const UserDashboard = () => {
   const [viewQRId, setViewQRId] = useState(null);
   const [switchingStatusId, setSwitchingStatusId] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // NEW: State for custom delete dialog
+  
   const primaryColor = "#2563eb";
 
   useEffect(() => {
@@ -527,7 +557,6 @@ const UserDashboard = () => {
       setUserEmail(parsedUser.email);
       fetchUserQuizzes(parsedUser.email);
     }
-    // Close menu when clicking elsewhere
     const closeMenu = () => setActiveMenuId(null);
     window.addEventListener('click', closeMenu);
     return () => window.removeEventListener('click', closeMenu);
@@ -582,15 +611,28 @@ const UserDashboard = () => {
     }
   };
 
-  const handleDeleteQuiz = async (quizId) => {
-    if (!window.confirm("Delete quiz?")) return;
-    const response = await fetch(`https://quiz-krida.onrender.com/Logged/Delete/${quizId}`, {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
-    });
-    if (response.ok) {
-      setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
-      toast.success("Quiz deleted");
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const quizId = deleteTarget.quizId;
+    
+    try {
+      const response = await fetch(`https://quiz-krida.onrender.com/Logged/Delete/${quizId}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+      });
+      if (response.ok) {
+        setQuizzes(prev => prev.filter(q => q.quizId !== quizId));
+        toast.success("Quiz deleted");
+      }
+    } catch (e) {
+      toast.error("Delete failed");
+    } finally {
+      setDeleteTarget(null);
     }
+  };
+
+  const handleCreateNew = () => {
+    setIsCreating(true);
+    router.push("/create");
   };
 
   const activeQRQuiz = quizzes.find(q => q.quizId === viewQRId);
@@ -598,6 +640,14 @@ const UserDashboard = () => {
   return (
     <DashboardWrapper>
       <Toaster position="bottom-right" />
+      
+      {/* Custom Delete Modal */}
+      <DeleteConfirmationModal 
+        isOpen={!!deleteTarget}
+        title={deleteTarget?.quizTitle}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
 
       <AnimatePresence>
         {viewResultId && <ResultModal quizId={viewResultId} onClose={() => setViewResultId(null)} />}
@@ -631,8 +681,9 @@ const UserDashboard = () => {
                 <h1>Admin Dashboard</h1>
                 <p>Logged in as <span className="highlight">{userEmail}</span></p>
               </div>
-              <CreateBtn onClick={() => router.push("/create")} $primary={primaryColor}>
-                <Plus size={20} /> <span className="btn-text">New Quiz</span>
+              <CreateBtn onClick={handleCreateNew} $primary={primaryColor} disabled={isCreating}>
+                {isCreating ? <Loader2 size={20} className="spinner" /> : <Plus size={20} />} 
+                <span className="btn-text">{isCreating ? "Loading..." : "New Quiz"}</span>
               </CreateBtn>
             </header>
             <SearchBar
@@ -646,8 +697,9 @@ const UserDashboard = () => {
                 <EmptyState>
                   <Inbox size={48} />
                   <p>You haven't created any quizzes yet.</p>
-                  <CreateBtn onClick={() => router.push("/create")} $primary={primaryColor}>
-                    <Plus size={20} /> Create Your First Quiz
+                  <CreateBtn onClick={handleCreateNew} $primary={primaryColor} disabled={isCreating}>
+                    {isCreating ? <Loader2 size={20} className="spinner" /> : <Plus size={20} />} 
+                    {isCreating ? "Redirecting..." : "Create Your First Quiz"}
                   </CreateBtn>
                 </EmptyState>
               ) : (
@@ -661,7 +713,6 @@ const UserDashboard = () => {
                         <div className="icon-bg"><BookOpen size={20} color={primaryColor} /></div>
 
                         <ActionWrapper>
-                          {/* The Static Status Pill (Matches the DataGrid style) */}
                           <div className={`status-pill ${quiz.isPrivate ? 'private' : 'public'}`}>
                             {quiz.isPrivate ? <Lock size={12} /> : <Globe size={12} />}
                             <span>{quiz.isPrivate ? 'Private' : 'Public'}</span>
@@ -703,7 +754,7 @@ const UserDashboard = () => {
                                     <FileText size={16} /> View Results
                                   </MenuOption>
                                   <Divider />
-                                  <MenuOption onClick={() => handleDeleteQuiz(quiz.quizId)} className="delete">
+                                  <MenuOption onClick={() => setDeleteTarget(quiz)} className="delete">
                                     <Trash2 size={16} /> Delete Quiz
                                   </MenuOption>
                                 </DropdownMenu>
@@ -1240,11 +1291,118 @@ const SearchWrapper = styled.div`
   }
 `;
 
-const ModalOverlay = styled(motion.div)` position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; `;
-const ModalContent = styled(motion.div)` background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 600px; padding: 24px; position: relative; backdrop-filter: blur(16px); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; h3 { display: flex; align-items: center; gap: 10px; margin: 0; } button { background: none; border: none; color: #94a3b8; cursor: pointer; } } .loading-center { display: flex; justify-content: center; padding: 40px; .spinner { animation: spin 1s linear infinite; } } .no-data { text-align: center; color: #94a3b8; padding: 20px; } `;
+const ModalOverlay = styled(motion.div)`
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0, 0, 0, 0.7); 
+  backdrop-filter: blur(8px); 
+  z-index: 1000; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  padding: 20px;
+`;
+const ModalContent = styled(motion.div)`
+  background: rgba(30, 41, 59, 0.9); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 24px; 
+  width: 100%; 
+  max-width: 450px; /* Slimmer for the delete dialog */
+  padding: 32px; 
+  position: relative; 
+  backdrop-filter: blur(16px); 
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  text-align: center;
+
+  .warning-icon {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    color: #ef4444;
+  }
+
+  h3 { 
+    font-size: 1.5rem; 
+    margin-bottom: 12px; 
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+
+  p { 
+    color: #94a3b8; 
+    line-height: 1.6; 
+    margin-bottom: 30px; 
+    strong { color: #f8fafc; }
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .cancel-btn {
+      background: rgba(255, 255, 255, 0.05);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      &:hover { background: rgba(255, 255, 255, 0.1); }
+    }
+
+    .confirm-btn {
+      background: #ef4444;
+      color: white;
+      &:hover { 
+        background: #dc2626;
+        box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+      }
+    }
+  }
+
+  /* Specific styles for Results/Live Modals */
+  &.large {
+    max-width: 800px;
+    text-align: left;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    button { background: none; border: none; color: #94a3b8; cursor: pointer; }
+  }
+
+  .loading-center {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #94a3b8;
+    padding: 20px;
+  }
+`;
 const ResultTable = styled.table` width: 100%; border-collapse: collapse; margin-top: 10px; th, td { text-align: left; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); } th { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; } .score-cell { color: #10b981; font-weight: 700; } `;
 const DownloadBtn = styled.button` background: rgba(37, 99, 235, 0.1); border: none; color: #3b82f6; padding: 6px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; &:hover { background: #3b82f6; color: white; } `;
 const WhatsAppBtn = styled.button` width: 100%; background: #25d366; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; &:hover { transform: scale(1.02); background: #22c35e; } `;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
 const DashboardWrapper = styled.div`
   max-width: 1200px;
@@ -1253,6 +1411,7 @@ const DashboardWrapper = styled.div`
   margin: 0 auto;
   height: auto; 
   overflow: visible;
+
   .main-header {
     display: flex;
     flex-direction: row; 
@@ -1262,12 +1421,20 @@ const DashboardWrapper = styled.div`
     gap: 15px; 
     h1 { font-size: 1.8rem; font-weight: 800; }
     .highlight { color: #3b82f6; }
+    
     @media (max-width: 640px) {
       h1 { font-size: 1.2rem; }
       .user-info p { font-size: 0.8rem; }
     }
   }
-  .btn-text { @media (max-width: 640px) { display: none; } }
+
+  .btn-text { 
+    @media (max-width: 640px) { display: none; } 
+  }
+
+  .spinner {
+    animation: ${spin} 1s linear infinite;
+  }
 `;
 
 const QuizGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; @media (max-width: 640px) { grid-template-columns: 1fr; } `;
@@ -1294,8 +1461,24 @@ const StyledCard = styled(motion.div)`
 
 const QuestionEditBox = styled.div` background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 18px; margin-bottom: 15px; @media (min-width: 640px) { padding: 20px; } .q-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; color: #3b82f6; font-weight: 700; } .correct-select { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; select { background: #1e293b; color: white; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px; outline: none; } } .q-input { width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid #334155; padding: 12px; border-radius: 10px; color: white; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; min-height: 80px; resize: vertical; &:focus { border-color: #3b82f6; outline: none; } } .options-grid-edit { display: grid; grid-template-columns: 1fr; gap: 10px; @media (min-width: 640px) { grid-template-columns: 1fr 1fr; } .opt-field { display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid #334155; padding: 10px; border-radius: 10px; .opt-label { color: #3b82f6; font-weight: 800; font-size: 0.8rem; } input { background: none; border: none; color: white; width: 100%; outline: none; font-size: 0.9rem; } &:focus-within { border-color: #3b82f6; } } } `;
 
-const CreateBtn = styled(motion.button)` display: flex; align-items: center; gap: 10px; background: ${p => p.$primary}; padding: 10px 20px; border-radius: 12px; color: white; border: none; font-weight: 700; cursor: pointer; `;
+const CreateBtn = styled.button`
+  background: ${props => props.$primary};
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: opacity 0.2s;
 
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
 const LoadingState = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; .spinner { animation: spin 1s linear infinite; } `;
 const DataGrid = styled.div` display: flex; gap: 10px; margin-bottom: 15px; .data-item { font-size: 0.75rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; } `;
 const SeeQuestionBtn = styled.button` width: 100%; background: rgba(255,255,255,0.05); color: #94a3b8; padding: 10px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:hover { background: ${p => p.$primary}; color: white; } `;
