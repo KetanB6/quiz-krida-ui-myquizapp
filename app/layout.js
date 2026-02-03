@@ -4,6 +4,7 @@ import Navbar from "./component/navbar";
 import AppBackground from "./component/AppBackground";
 import StyledComponentsRegistry from './lib/registry';
 import { Toaster } from 'react-hot-toast';
+import GlobalGunCursor from "./component/GlobalGunCursor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,7 +68,7 @@ export default function RootLayout({ children }) {
         <StyledComponentsRegistry>
           {/* AppBackground handles the monochrome noise/particles if you have them */}
           <AppBackground />
-          
+          <GlobalGunCursor />
           <div className="relative z-10 flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">

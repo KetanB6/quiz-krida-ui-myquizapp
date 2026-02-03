@@ -1,14 +1,14 @@
 "use client";
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { Play, Globe, PlusCircle, Sparkles, Radio, Loader2, ArrowUpRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const QuickActions = () => {
   const router = useRouter();
   const [loadingIndex, setLoadingIndex] = useState(null);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   
-  // Logic remains untouched
   const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem("token");
 
   const handleAction = (action, index) => {
@@ -19,297 +19,339 @@ const QuickActions = () => {
   };
 
   const actions = [
-    { title: "PLAY QUIZ", desc: "Join an arena using a unique room code and compete in real-time.", icon: <Play size={20} />, onClick: () => router.push('/play') },
-    { title: "CREATE QUIZ", desc: "Design custom logic, set countdowns, and curate your own sessions.", icon: <PlusCircle size={20} />, onClick: () => !isLoggedIn ? router.push('/login') : router.push('/create') },
-    { title: "QUICK MAKER", desc: "Generate high-stakes challenges in seconds using our AI engine.", icon: <Sparkles size={20} />, onClick: () => router.push('/quick-quiz-maker') },
-    { title: "QUIZ BY AI", desc: "Harness deep-learning to transform any topic into a complete quiz.", icon: <Sparkles size={20} />, onClick: () => router.push('/generate-ai') },
-    { title: "PUBLIC GALLERY", desc: "Explore an expansive library of community-vetted challenges.", icon: <Globe size={20} />, onClick: () => router.push('/public-library') },
-    { title: "GLOBAL TOPICS", desc: "Real-time challenges happening now. Secure your digital legacy.", icon: <Radio size={20} />, onClick: () => router.push('/browseQuizzes') },
+    { title: "PLAY QUIZ", desc: "JOIN AN ARENA USING A UNIQUE ROOM CODE AND COMPETE IN REAL-TIME.", icon: <Play size={24} />, onClick: () => router.push('/play') },
+    { title: "CREATE QUIZ", desc: "DESIGN CUSTOM LOGIC, SET COUNTDOWNS, AND CURATE YOUR OWN SESSIONS.", icon: <PlusCircle size={24} />, onClick: () => !isLoggedIn ? router.push('/login') : router.push('/create') },
+    { title: "QUICK MAKER", desc: "GENERATE HIGH-STAKES CHALLENGES IN SECONDS USING OUR AI ENGINE.", icon: <Sparkles size={24} />, onClick: () => router.push('/quick-quiz-maker') },
+    { title: "QUIZ BY AI", desc: "HARNESS DEEP-LEARNING TO TRANSFORM ANY TOPIC INTO A COMPLETE QUIZ.", icon: <Sparkles size={24} />, onClick: () => router.push('/generate-ai') },
+    { title: "PUBLIC GALLERY", desc: "EXPLORE AN EXPANSIVE LIBRARY OF COMMUNITY-VETTED CHALLENGES.", icon: <Globe size={24} />, onClick: () => router.push('/public-library') },
+    { title: "GLOBAL TOPICS", desc: "REAL-TIME CHALLENGES HAPPENING NOW. SECURE YOUR DIGITAL LEGACY.", icon: <Radio size={24} />, onClick: () => router.push('/browseQuizzes') },
   ];
 
   return (
     <Wrapper>
+      <SectionHeader
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="header-label">02 — ACTIONS</div>
+        <h2>CHOOSE YOUR<br />PATH</h2>
+      </SectionHeader>
+
       <GridContainer>
         {actions.map((action, index) => (
-          <ZolviCard 
+          <BrutalistCard 
             key={index} 
             onClick={() => handleAction(action, index)}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            $isHovered={hoveredIndex === index}
           >
-            {/* Background High-Tech Accents */}
-            <div className="bg-grid" />
-            <div className="glow-point" />
+            {/* Card Number Badge */}
+            <CardNumber>/{String(index + 1).padStart(2, '0')}</CardNumber>
             
-            <div className="card-inner">
-              <div className="card-header">
-                <div className="status-indicator">
-                  <div className="dot" />
-                  <span className="index-num">SYSTEM_0{index + 1}</span>
-                </div>
-                <div className="icon-wrap">{action.icon}</div>
-              </div>
-              
-              <div className="card-body">
-                <h3>{action.title}</h3>
-                <p>{action.desc}</p>
-              </div>
+            {/* Icon Section */}
+            <IconSection $isHovered={hoveredIndex === index}>
+              {action.icon}
+            </IconSection>
+            
+            {/* Content */}
+            <CardContent>
+              <CardTitle>{action.title}</CardTitle>
+              <CardDesc>{action.desc}</CardDesc>
+            </CardContent>
 
-              <div className="card-footer">
-                {loadingIndex === index ? (
-                  <div className="loading-state">
-                    <Loader2 className="spinner" size={16} />
-                    <span>LINKING...</span>
-                  </div>
-                ) : (
-                  <div className="action-trigger">
-                    <span className="action-text">INITIALIZE_PROCEDURE</span>
-                    <div className="arrow-box">
-                      <ArrowUpRight size={14} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* The "Liquid/Laser" Border Scan */}
-            <div className="scan-line" />
-            <div className="corner-accent top-right" />
-            <div className="corner-accent bottom-left" />
-          </ZolviCard>
+            {/* Footer Action */}
+            <CardFooter>
+              {loadingIndex === index ? (
+                <LoadingState>
+                  <Loader2 className="spinner" size={18} />
+                  <span>LOADING...</span>
+                </LoadingState>
+              ) : (
+                <ActionButton $isHovered={hoveredIndex === index}>
+                  <span>EXECUTE</span>
+                  <ArrowUpRight size={18} />
+                </ActionButton>
+              )}
+            </CardFooter>
+
+            {/* Brutal Border Effects */}
+            <TopBorder $isHovered={hoveredIndex === index} />
+            <BottomBorder $isHovered={hoveredIndex === index} />
+          </BrutalistCard>
         ))}
       </GridContainer>
     </Wrapper>
   );
 };
 
+/* --- ANIMATIONS --- */
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const glitchShift = keyframes`
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(2px, -2px); }
+  66% { transform: translate(-2px, 2px); }
+`;
+
+const expandWidth = keyframes`
+  from { width: 0; }
+  to { width: 100%; }
+`;
+
 /* --- STYLED COMPONENTS --- */
 
 const Wrapper = styled.div`
   width: 100%;
-  padding: 20px;
-  @media (min-width: 768px) { padding: 60px 20px; }
+  padding: 40px 20px;
+  background: #000;
+  
+  @media (min-width: 768px) { 
+    padding: 80px 40px; 
+  }
+`;
+
+const SectionHeader = styled.div`
+  max-width: 1400px;
+  margin: 0 auto 60px;
+  
+  .header-label {
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 20px;
+    letter-spacing: 0.5em;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  
+  h2 {
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  
+  @media (min-width: 768px) {
+    margin-bottom: 80px;
+  }
 `;
 
 const GridContainer = styled.div`
   display: grid;
-  /* Modern Responsive Grid Logic */
   grid-template-columns: 1fr;
-  @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
-  
-  gap: 1px; 
-  background: rgba(255, 255, 255, 0.07); 
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 0;
   max-width: 1400px;
   margin: 0 auto;
-  box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  border: 4px solid #fff;
+  
+  @media (min-width: 640px) { 
+    grid-template-columns: repeat(2, 1fr); 
+  }
+  
+  @media (min-width: 1024px) { 
+    grid-template-columns: repeat(3, 1fr); 
+  }
 `;
 
-const ZolviCard = styled.div`
-  position: relative;
-  background: #000;
-  padding: 30px;
-  height: 280px;
+const CardNumber = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #888;
+  letter-spacing: 0.1em;
+  z-index: 10;
+  
   @media (min-width: 768px) {
-    padding: 45px;
-    height: 340px;
+    top: 30px;
+    left: 30px;
+    font-size: 0.85rem;
   }
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-  -webkit-tap-highlight-color: transparent;
+`;
 
-  /* Cyber Grid Background */
-  .bg-grid {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-    opacity: 0.3;
-    transition: opacity 0.5s ease;
+const IconSection = styled.div`
+  width: 60px;
+  height: 60px;
+  border: 4px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$isHovered ? '#fff' : '#000'};
+  color: ${props => props.$isHovered ? '#000' : '#fff'};
+  margin-bottom: 30px;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  transform: ${props => props.$isHovered ? 'rotate(5deg) scale(1.1)' : 'rotate(0deg) scale(1)'};
+  
+  svg {
+    stroke-width: 3;
   }
-
-  .glow-point {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.8s ease;
+  
+  @media (min-width: 768px) {
+    width: 70px;
+    height: 70px;
   }
+`;
 
-  .card-inner {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    z-index: 5;
+const CardContent = styled.div`
+  flex: 1;
+  margin-bottom: 30px;
+`;
+
+const CardTitle = styled.h3`
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #fff;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  
+  @media (min-width: 768px) { 
+    font-size: 1.5rem;
+    margin-bottom: 20px;
   }
+`;
 
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      .dot {
-        width: 4px;
-        height: 4px;
-        background: #fff;
-        border-radius: 50%;
-        box-shadow: 0 0 8px #fff;
-      }
-    }
-
-    .index-num {
-      font-size: 10px;
-      color: #444;
-      font-weight: 800;
-      letter-spacing: 0.25em;
-    }
-
-    .icon-wrap {
-      color: #fff;
-      opacity: 0.3;
-      transform: scale(0.9);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
+const CardDesc = styled.p`
+  font-size: 0.75rem;
+  color: #888;
+  line-height: 1.6;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  
+  @media (min-width: 768px) { 
+    font-size: 0.85rem;
+    line-height: 1.8;
   }
+`;
 
-  h3 {
-    font-size: 1.1rem;
-    @media (min-width: 768px) { font-size: 1.4rem; }
+const CardFooter = styled.div`
+  margin-top: auto;
+`;
+
+const LoadingState = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: #fff;
+  font-weight: 900;
+  text-transform: uppercase;
+  
+  .spinner { 
+    animation: ${spin} 1s linear infinite; 
+  }
+`;
+
+const ActionButton = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 0;
+  border-top: 2px solid ${props => props.$isHovered ? '#fff' : 'rgba(255, 255, 255, 0.2)'};
+  transition: all 0.3s ease;
+  
+  span {
+    font-size: 0.75rem;
     font-weight: 900;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.2em;
     color: #fff;
-    margin-bottom: 12px;
     text-transform: uppercase;
   }
+  
+  svg {
+    transition: transform 0.3s ease;
+    transform: ${props => props.$isHovered ? 'translate(4px, -4px)' : 'translate(0, 0)'};
+  }
+`;
 
-  p {
-    font-size: 0.85rem;
-    color: #666;
-    line-height: 1.6;
-    max-width: 90%;
-    transition: color 0.4s ease;
+const TopBorder = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: ${props => props.$isHovered ? '100%' : '0%'};
+  background: #fff;
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 20;
+`;
+
+const BottomBorder = styled.div`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 4px;
+  width: ${props => props.$isHovered ? '100%' : '0%'};
+  background: #fff;
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 20;
+`;
+
+const BrutalistCard = styled.div`
+  position: relative;
+  background: #000;
+  padding: 80px 30px 30px;
+  min-height: 350px;
+  cursor: pointer;
+  overflow: hidden;
+  border: 2px solid #fff;
+  border-right-width: ${props => props.$columnIndex !== 2 ? '1px' : '2px'};
+  border-bottom-width: ${props => props.$rowIndex !== 1 ? '1px' : '2px'};
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  display: flex;
+  flex-direction: column;
+  
+  @media (min-width: 768px) {
+    padding: 100px 40px 40px;
+    min-height: 400px;
   }
 
-  .card-footer {
-    .action-trigger {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      opacity: 0.4;
-      transition: all 0.4s ease;
-    }
-
-    .action-text {
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.2em;
-      color: #fff;
-    }
-
-    .arrow-box {
-      width: 32px;
-      height: 32px;
-      border: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.4s ease;
-    }
-
-    .loading-state {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: #fff;
-    }
-  }
-
-  /* High-Tech Accents */
-  .corner-accent {
+  /* Grid pattern background */
+  &::before {
+    content: '';
     position: absolute;
-    width: 10px;
-    height: 10px;
-    border: 1px solid rgba(255,255,255,0.2);
-    opacity: 0;
-    transition: all 0.4s ease;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: ${props => props.$isHovered ? '1' : '0'};
+    transition: opacity 0.3s ease;
+    pointer-events: none;
   }
-  .top-right { top: 15px; right: 15px; border-left: none; border-bottom: none; }
-  .bottom-left { bottom: 15px; left: 15px; border-right: none; border-top: none; }
 
-  .scan-line {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #fff, transparent);
-    opacity: 0;
+  /* Hover Effects */
+  &:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 8px 8px 0 #fff;
     z-index: 10;
   }
 
-  /* --- HOVER EFFECTS --- */
-  @media (hover: hover) {
-    &:hover {
-      background: #080808;
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  &:active {
+    transform: translate(0, 0);
+    box-shadow: 4px 4px 0 #fff;
+  }
 
-      .bg-grid { opacity: 0.8; }
-      .glow-point { opacity: 1; }
-
-      .icon-wrap {
-        opacity: 1;
-        transform: scale(1.1) rotate(-5deg);
-        color: #fff;
-      }
-
-      .card-footer .action-trigger {
-        opacity: 1;
-      }
-
-      .arrow-box {
+  /* Mobile Active State */
+  @media (max-width: 767px) {
+    &:active {
+      background: #111;
+      
+      ${IconSection} {
         background: #fff;
         color: #000;
-        border-color: #fff;
-      }
-
-      p { color: #aaa; }
-
-      .corner-accent { opacity: 1; }
-      
-      .scan-line {
-        animation: scanLine 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        animation: ${glitchShift} 0.3s ease;
       }
     }
   }
-
-  /* --- MOBILE ACTIVE --- */
-  &:active {
-    transform: scale(0.98);
-    background: #111;
-  }
-
-  @keyframes scanLine {
-    0% { top: 0%; opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
-  }
-
-  .spinner { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
 export default QuickActions;
