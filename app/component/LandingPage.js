@@ -32,6 +32,10 @@ const LandingPage = () => {
         featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    function getRandomNumber() {
+        return Math.floor(Math.random() * (1500 - 1000 + 1)) + 1000;
+    }
+
     return (
         <PageWrapper>
            
@@ -72,8 +76,8 @@ const LandingPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1 }}
                 >
-                    QUIZKRIDA BLENDS BRUTAL DESIGN WITH AI PRECISION TO TURN
-                    LEARNING INTO A HIGH-STAKES DIGITAL EXPERIENCE.
+                    QuizKrida blends artistic design with AI precision to turn 
+                    learning into a high-stakes digital experience.
                 </motion.p>
 
                 <motion.div
@@ -124,28 +128,21 @@ const LandingPage = () => {
                 </motion.div>
 
                 <div className="approach-grid">
-                    {[
-                        { num: '/01', title: 'GENERATE', desc: 'LEVERAGE ADVANCED AI TO CURATE SPECIALIZED CHALLENGES IN SECONDS.', icon: '⚡' },
-                        { num: '/02', title: 'COMPETE', desc: 'ENGAGE IN HIGH-OCTANE ARENAS AGAINST GLOBAL INTELLECTUAL PEERS.', icon: '🎯' },
-                        { num: '/03', title: 'TRIUMPH', desc: 'SECURE LEGACIES AND PREMIUM REWARDS FOR YOUR MENTAL PROWESS.', icon: '🏆' }
-                    ].map((card, i) => (
-                        <ApproachCard
-                            key={i}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.2 }}
-                            whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                        >
-                            <div className="card-header">
-                                <span className="num">{card.num}</span>
-                                <span className="icon">{card.icon}</span>
-                            </div>
-                            <h3>{card.title}</h3>
-                            <p>{card.desc}</p>
-                            <div className="card-border" />
-                        </ApproachCard>
-                    ))}
+                    <div className="approach-card">
+                        <span className="num">/01</span>
+                        <h3>GENERATE</h3>
+                        <p>Leverage advanced AI to curate specialized challenges in seconds.</p>
+                    </div>
+                    <div className="approach-card">
+                        <span className="num">/02</span>
+                        <h3>COMPETE</h3>
+                        <p>Engage in high-octane arenas against global intellectual peers.</p>
+                    </div>
+                    <div className="approach-card">
+                        <span className="num">/03</span>
+                        <h3>TRIUMPH</h3>
+                        <p>Secure legacies and premium rewards for your mental prowess.</p>
+                    </div>
                 </div>
             </ApproachSection>
 
@@ -158,6 +155,7 @@ const LandingPage = () => {
                 <QuickActions />
             </CardsWrapper>
 
+        
             <StatsSection>
                 <motion.div
                     className="stats-header"
@@ -172,34 +170,29 @@ const LandingPage = () => {
                 </motion.div>
 
                 <div className="stats-grid">
-                    {[
-                        { value: `${randomUsers}`, label: 'GLOBAL COMPETITORS' },
-                        { value: '₹5K+', label: 'PRIZE POOL' },
-                        { value: '24/7', label: 'LIVE ARENAS' }
-                    ].map((stat, i) => (
-                        <motion.div
-                            key={i}
-                            className="stat-item"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.1 }}
-                            whileHover={{ scale: 1.05 }}
-                        >
-                            <h4>{stat.value}</h4>
-                            <p>{stat.label}</p>
-                        </motion.div>
-                    ))}
+                    <div className="stat-item">
+                        <h4>12.4K</h4>
+                        <p>Global Competitors</p>
+                    </div>
+                    <div className="stat-item">
+                        <h4>$5K+</h4>
+                        <p>Prize Pool</p>
+                    </div>
+                    <div className="stat-item">
+                        <h4>24/7</h4>
+                        <p>Live Arenas</p>
+                    </div>
                 </div>
 
                 <WinnerTicker>
                     <div className="ticker-track">
-                        <span>● @DHIRAJ_01 WON $50 IN WEEKLY QUIZ</span>
-                        <span>● @ALEX_DEV JUST EARNED 'AI MASTER' BADGE</span>
-                        <span>● @RAHUL.JS WON THE SCIENCE BOWL</span>
-                        <span>● @DHIRAJ_01 WON $50 IN WEEKLY QUIZ</span>
-                        <span>● @ALEX_DEV JUST EARNED 'AI MASTER' BADGE</span>
-                        <span>● @RAHUL.JS WON THE SCIENCE BOWL</span>
+                        <span>● @Dhiraj_01 won $50 in Weekly Quiz</span>
+                        <span>● @Alex_Dev just earned 'AI Master' Badge</span>
+                        <span>● @Rahul.js won the Science Bowl</span>
+                        <span>● @Dhiraj_01 won $50 in Weekly Quiz</span>
+                        {/* Duplicate for seamless loop */}
+                        <span>● @Dhiraj_01 won $50 in Weekly Quiz</span>
+                        <span>● @Alex_Dev just earned 'AI Master' Badge</span>
                     </div>
                 </WinnerTicker>
             </StatsSection>
