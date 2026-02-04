@@ -47,7 +47,6 @@ const TopicQuizManager = () => {
   const [isFinished, setIsFinished] = useState(false);
 
   const BASE_URL = 'https://quizbyaiservice-production.up.railway.app';
-
   useEffect(() => {
     const fetchTopics = async () => {
       try {

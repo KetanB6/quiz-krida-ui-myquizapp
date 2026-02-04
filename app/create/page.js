@@ -111,7 +111,7 @@ const CreatePage = () => {
         };
 
         try {
-            const response = await fetch('https://quiz-krida.onrender.comCreate', {
+            const response = await fetch(`${process.env.SERVER_URL}/Create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ const CreatePage = () => {
         }));
 
         try {
-            const response = await fetch('https://quiz-krida.onrender.comQuestions', {
+            const response = await fetch(`${process.env.SERVER_URL}/Questions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
