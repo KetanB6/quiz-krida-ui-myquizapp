@@ -10,9 +10,9 @@ const PlayQuiz = () => {
     const [userAnswers, setUserAnswers] = useState({});
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [score, setScore] = useState(0);
-    
+
     const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-    const [secondsPerQuestion, setSecondsPerQuestion] = useState(60); 
+    const [secondsPerQuestion, setSecondsPerQuestion] = useState(60);
     const [timeLeft, setTimeLeft] = useState(60);
 
     const [joinData, setJoinData] = useState({
@@ -20,12 +20,12 @@ const PlayQuiz = () => {
         quizId: ''
     });
 
-    // Protection & URL Logic
+    // Protection Logic
     useEffect(() => {
         const handleContextMenu = (e) => e.preventDefault();
         const handleKeyDown = (e) => {
             if (
-                e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's' || e.key === 'p') || 
+                e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's' || e.key === 'p') ||
                 e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')
             ) {
                 e.preventDefault();
@@ -46,16 +46,17 @@ const PlayQuiz = () => {
         };
     }, []);
 
-    // Timer Logic
+    // Timer Logic - Only runs if timer property is true in quizData
     useEffect(() => {
-        if (!quizData || isSubmitted || secondsPerQuestion === 0) return;
+        if (!quizData || isSubmitted || !quizData.quiz?.timer) return;
+        
         if (timeLeft === 0) {
             handleNextQuestion();
             return;
         }
         const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
         return () => clearInterval(timer);
-    }, [timeLeft, quizData, isSubmitted, secondsPerQuestion]);
+    }, [timeLeft, quizData, isSubmitted]);
 
     const handleNextQuestion = () => {
         const isLastQuestion = currentQuestionIdx === quizData.questions.length - 1;
@@ -63,7 +64,10 @@ const PlayQuiz = () => {
             handleSubmitExam();
         } else {
             setCurrentQuestionIdx(prev => prev + 1);
-            setTimeLeft(secondsPerQuestion); 
+            // Reset timeLeft only if timer is enabled
+            if (quizData.quiz?.timer) {
+                setTimeLeft(secondsPerQuestion);
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -75,20 +79,6 @@ const PlayQuiz = () => {
         }
         setIsLoading(true);
         try {
-            const configRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Preview/${joinData.quizId}`, {
-                method: 'GET',
-                headers: { 'ngrok-skip-browser-warning': '69420' }
-            });
-            
-            let dynamicTime = 60; 
-            if (configRes.ok) {
-                const configData = await configRes.json();
-                if (configData.quiz?.timePerQ) {
-                    dynamicTime = parseInt(configData.quiz.timePerQ) * 60;
-                    setSecondsPerQuestion(dynamicTime);
-                }
-            }
-
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Play/${joinData.quizId}/${joinData.participantName}`, {
                 method: 'GET',
                 headers: { 'ngrok-skip-browser-warning': '69420' },
@@ -97,8 +87,21 @@ const PlayQuiz = () => {
             if (!response.ok) throw new Error(`ACCESS DENIED: Quiz inactive.`);
 
             const data = await response.json();
+
+            if (!data.questions || data.questions.length === 0) {
+                toast.error("ERROR: THIS QUIZ HAS NO QUESTIONS");
+                setIsLoading(false);
+                return;
+            }
+
+            // Logic to handle timer and time conversion
+            if (data.quiz?.timePerQ !== undefined) {
+                const convertedSeconds = parseInt(data.quiz.timePerQ) * 60;
+                setSecondsPerQuestion(convertedSeconds);
+                setTimeLeft(convertedSeconds);
+            }
+
             setQuizData(data);
-            setTimeLeft(dynamicTime); 
             toast.success(`CONNECTION ESTABLISHED`);
         } catch (error) {
             toast.error(error.message);
@@ -150,10 +153,10 @@ const PlayQuiz = () => {
     return (
         <PageContainer>
             <Toaster toastOptions={{ style: { background: '#0a0a0a', color: '#fff', border: '1px solid #222' } }} />
-            
+
             {!quizData ? (
                 <EntryWrapper>
-                    <StatusTag><ShieldAlert size={12}/> ENCRYPTED SESSION</StatusTag>
+                    <StatusTag><ShieldAlert size={12} /> ENCRYPTED SESSION</StatusTag>
                     <ZolviEntryCard>
                         <Header>
                             <div className="icon-box"><Zap size={24} fill="currentColor" /></div>
@@ -168,11 +171,11 @@ const PlayQuiz = () => {
                                 <label>PARTICIPANT NAME</label>
                                 <div className="input-wrapper">
                                     <User size={16} className="input-icon" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Enter full name..." 
+                                    <input
+                                        type="text"
+                                        placeholder="Enter full name..."
                                         value={joinData.participantName}
-                                        onChange={(e) => setJoinData({...joinData, participantName: e.target.value})}
+                                        onChange={(e) => setJoinData({ ...joinData, participantName: e.target.value })}
                                     />
                                 </div>
                             </InputGroup>
@@ -181,11 +184,11 @@ const PlayQuiz = () => {
                                 <label>SESSION ID</label>
                                 <div className="input-wrapper">
                                     <Hash size={16} className="input-icon" />
-                                    <input 
-                                        type="number" 
-                                        placeholder="000000" 
+                                    <input
+                                        type="number"
+                                        placeholder="000000"
                                         value={joinData.quizId}
-                                        onChange={(e) => setJoinData({...joinData, quizId: e.target.value})}
+                                        onChange={(e) => setJoinData({ ...joinData, quizId: e.target.value })}
                                     />
                                 </div>
                             </InputGroup>
@@ -201,15 +204,19 @@ const PlayQuiz = () => {
                     <QuizHeader>
                         <div className="top-meta">
                             <span className="q-count">QUESTION {currentQuestionIdx + 1}/{quizData.questions.length}</span>
-                            <div className={isSubmitted ? "status-pill score" : "status-pill timer"}>
-                                {isSubmitted ? <Trophy size={14} /> : <Timer size={14} />}
-                                {isSubmitted ? `SCORE: ${score}/${quizData.questions.length}` : `${timeLeft}s`}
-                            </div>
+                            {/* Only show timer pill if quizData.quiz.timer is true */}
+                            {(quizData.quiz?.timer || isSubmitted) && (
+                                <div className={isSubmitted ? "status-pill score" : "status-pill timer"}>
+                                    {isSubmitted ? <Trophy size={14} /> : <Timer size={14} />}
+                                    {isSubmitted ? `SCORE: ${score}/${quizData.questions.length}` : `${timeLeft}s`}
+                                </div>
+                            )}
                         </div>
                         <h2>{isSubmitted ? "POST-SESSION ANALYSIS" : quizData.quiz.quizTitle}</h2>
                     </QuizHeader>
 
-                    {!isSubmitted && (
+                    {/* Progress bar only visible if timer is enabled */}
+                    {!isSubmitted && quizData.quiz?.timer && (
                         <ProgressBarContainer>
                             <ProgressFill progress={(timeLeft / secondsPerQuestion) * 100} />
                         </ProgressBarContainer>
@@ -219,7 +226,8 @@ const PlayQuiz = () => {
                         {quizData.questions.map((q, idx) => {
                             if (!isSubmitted && idx !== currentQuestionIdx) return null;
                             return (
-                                <QuestionCard key={idx} isSubmitted={isSubmitted}>
+                                /* Fixed using transient prop $isSubmitted */
+                                <QuestionCard key={idx} $isSubmitted={isSubmitted}>
                                     <div className="q-label">SYSTEM_QUERY_{idx + 1}</div>
                                     <h3>{q.question}</h3>
                                     <OptionsGrid>
@@ -227,7 +235,7 @@ const PlayQuiz = () => {
                                             const optValue = q[optKey];
                                             const isSelected = userAnswers[idx] === optValue;
                                             const isCorrect = optValue === q[q.correctOpt];
-                                            
+
                                             let variant = "default";
                                             if (isSubmitted) {
                                                 if (isCorrect) variant = "correct";
@@ -235,8 +243,8 @@ const PlayQuiz = () => {
                                             } else if (isSelected) variant = "selected";
 
                                             return (
-                                                <OptionButton 
-                                                    key={optKey} 
+                                                <OptionButton
+                                                    key={optKey}
                                                     variant={variant}
                                                     onClick={() => handleSelectOption(idx, optValue)}
                                                 >
@@ -403,11 +411,12 @@ const ContentArea = styled.div` margin-bottom: 40px; `;
 const QuestionCard = styled.div`
     .q-label { font-size: 10px; font-weight: 800; color: #444; margin-bottom: 12px; }
     h3 { font-size: 1.25rem; font-weight: 700; line-height: 1.5; margin-bottom: 30px; color: #efefef; }
-    
+    border: ${props => props.$isSubmitted ? '1px solid #333' : '1px solid #222'};
     ${props => props.isSubmitted && css`
         margin-bottom: 60px;
         border-bottom: 1px solid #111;
         padding-bottom: 40px;
+        opacity: 0.9;
     `}
 `;
 
