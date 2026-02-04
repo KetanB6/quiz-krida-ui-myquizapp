@@ -138,9 +138,9 @@ const CreatePage = () => {
                 // 2. Shuffle options
                 const shuffled = [...options].sort(() => Math.random() - 0.5);
 
-                // 3. Find which letter (a,b,c,d) is now the correct one
                 const letters = ['a', 'b', 'c', 'd'];
-                const correctIdx = shuffled.findIndex(opt => opt.isCorrect);
+                let correctIdx = shuffled.findIndex(opt => opt.isCorrect);
+                if (correctIdx === -1) correctIdx = 0;
 
                 return {
                     quizId: quizInfo.quizId,
@@ -149,7 +149,7 @@ const CreatePage = () => {
                     b: shuffled[1].text,
                     c: shuffled[2].text,
                     d: shuffled[3].text,
-                    correct: letters[correctIdx] // This ensures the correct letter is dynamically set per question
+                    correct: letters[correctIdx]
                 };
             });
 
