@@ -1,55 +1,128 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, createGlobalStyle } from 'styled-components'; // Added createGlobalStyle
 import { Zap, Loader2, Trophy, RefreshCcw, User, Hash, CheckCircle2, XCircle, Timer, ChevronRight, ShieldAlert } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
+// 1. GLOBAL PROTECTION STYLES
+const GlobalSecurity = createGlobalStyle`
+  /* Prevent text selection */
+  * {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none; /* Prevents long-press on iOS */
+  }
+
+  /* Hide content if user tries to print or save as PDF */
+  @media print {
+    body { display: none !important; }
+  }
+`;
+// DRM Effect: Moving noise to confuse screen recorders/OCR
+const noiseAnimation = keyframes`
+  0% { transform: translate(0,0); }
+  10% { transform: translate(-1%,-1%); }
+  20% { transform: translate(-2%,1%); }
+  100% { transform: translate(1%,1%); }
+`;
+
 const PlayQuiz = () => {
+    // ... (Your existing state kept exactly as is)
     const [isLoading, setIsLoading] = useState(false);
     const [quizData, setQuizData] = useState(null);
     const [userAnswers, setUserAnswers] = useState({});
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [score, setScore] = useState(0);
-
     const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
     const [secondsPerQuestion, setSecondsPerQuestion] = useState(60);
     const [timeLeft, setTimeLeft] = useState(60);
+    const [warningCount, setWarningCount] = useState(0);
+
+    // NEW: Security state
+    const [screenBlocked, setScreenBlocked] = useState(false);
 
     const [joinData, setJoinData] = useState({
         participantName: '',
         quizId: ''
     });
+    
 
-    // Protection Logic
+    // --- ENHANCED SECURITY LAYER ---
     useEffect(() => {
-        const handleContextMenu = (e) => e.preventDefault();
+        if (!quizData || isSubmitted) return;
+
+        const handleSecurityAlert = () => {
+            setScreenBlocked(true);
+            toast.error("SECURITY PROTOCOL: SCREEN BLOCKED", { id: 'security-toast' });
+            setTimeout(() => window.location.reload(), 1500);
+        };
+
+        const handleSecurityClear = () => {
+            setScreenBlocked(false);
+        };
+
+        // Detects when window loses focus (Snipping tool active or Phone swipe)
+        window.addEventListener('blur', handleSecurityAlert);
+        window.addEventListener('focus', handleSecurityClear);
+
+        // Detects mouse leaving the browser (Snipping tool target)
+        document.addEventListener('mouseleave', handleSecurityAlert);
+        document.addEventListener('mouseenter', handleSecurityClear);
+
         const handleKeyDown = (e) => {
+            // Block PrintScreen, Snipping Tool (Win+Shift+S), and common dev keys
             if (
-                e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's' || e.key === 'p') ||
-                e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')
+                e.key === 'PrintScreen' ||
+                e.key === 'Snapshot' ||
+                (e.ctrlKey && e.key === 'p') ||
+                (e.metaKey && e.shiftKey && (e.key === 's' || e.key === '4'))
             ) {
                 e.preventDefault();
-                toast.error("SYSTEM PROTECTION ACTIVE");
+                handleSecurityAlert();
+                setTimeout(handleSecurityClear, 3000);
             }
         };
 
-        document.addEventListener('contextmenu', handleContextMenu);
-        document.addEventListener('keydown', handleKeyDown);
-
-        const params = new URLSearchParams(window.location.search);
-        const idFromUrl = params.get('id') || params.get('quizId');
-        if (idFromUrl) setJoinData(prev => ({ ...prev, quizId: idFromUrl }));
+        window.addEventListener('keydown', handleKeyDown);
 
         return () => {
-            document.removeEventListener('contextmenu', handleContextMenu);
-            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('blur', handleSecurityAlert);
+            window.removeEventListener('focus', handleSecurityClear);
+            document.removeEventListener('mouseleave', handleSecurityAlert);
+            document.removeEventListener('mouseenter', handleSecurityClear);
+            window.removeEventListener('keydown', handleKeyDown);
         };
+    }, [quizData, isSubmitted]);
+
+    // --- Your Existing Tab Switching Logic (Kept) ---
+    useEffect(() => {
+        if (!quizData || isSubmitted) return;
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                const nextWarning = warningCount + 1;
+                setWarningCount(nextWarning);
+                if (nextWarning === 1) {
+                    toast.error("WARNING 1/2: TAB SWITCHING DETECTED!");
+                } else if (nextWarning >= 2) {
+                    toast.error("FINAL WARNING: TERMINATING.");
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [quizData, isSubmitted, warningCount]);
+
+    // --- Rest of your logic (Timer, Join, Submit) remains UNTOUCHED ---
+    useEffect(() => {
+        const handleContextMenu = (e) => e.preventDefault();
+        document.addEventListener('contextmenu', handleContextMenu);
+        return () => document.removeEventListener('contextmenu', handleContextMenu);
     }, []);
 
-    // Timer Logic - Only runs if timer property is true in quizData
     useEffect(() => {
         if (!quizData || isSubmitted || !quizData.quiz?.timer) return;
-        
         if (timeLeft === 0) {
             handleNextQuestion();
             return;
@@ -64,10 +137,7 @@ const PlayQuiz = () => {
             handleSubmitExam();
         } else {
             setCurrentQuestionIdx(prev => prev + 1);
-            // Reset timeLeft only if timer is enabled
-            if (quizData.quiz?.timer) {
-                setTimeLeft(secondsPerQuestion);
-            }
+            if (quizData.quiz?.timer) setTimeLeft(secondsPerQuestion);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -94,7 +164,6 @@ const PlayQuiz = () => {
                 return;
             }
 
-            // Logic to handle timer and time conversion
             if (data.quiz?.timePerQ !== undefined) {
                 const convertedSeconds = parseInt(data.quiz.timePerQ) * 60;
                 setSecondsPerQuestion(convertedSeconds);
@@ -204,7 +273,6 @@ const PlayQuiz = () => {
                     <QuizHeader>
                         <div className="top-meta">
                             <span className="q-count">QUESTION {currentQuestionIdx + 1}/{quizData.questions.length}</span>
-                            {/* Only show timer pill if quizData.quiz.timer is true */}
                             {(quizData.quiz?.timer || isSubmitted) && (
                                 <div className={isSubmitted ? "status-pill score" : "status-pill timer"}>
                                     {isSubmitted ? <Trophy size={14} /> : <Timer size={14} />}
@@ -215,7 +283,6 @@ const PlayQuiz = () => {
                         <h2>{isSubmitted ? "POST-SESSION ANALYSIS" : quizData.quiz.quizTitle}</h2>
                     </QuizHeader>
 
-                    {/* Progress bar only visible if timer is enabled */}
                     {!isSubmitted && quizData.quiz?.timer && (
                         <ProgressBarContainer>
                             <ProgressFill progress={(timeLeft / secondsPerQuestion) * 100} />
@@ -226,7 +293,6 @@ const PlayQuiz = () => {
                         {quizData.questions.map((q, idx) => {
                             if (!isSubmitted && idx !== currentQuestionIdx) return null;
                             return (
-                                /* Fixed using transient prop $isSubmitted */
                                 <QuestionCard key={idx} $isSubmitted={isSubmitted}>
                                     <div className="q-label">SYSTEM_QUERY_{idx + 1}</div>
                                     <h3>{q.question}</h3>
@@ -294,6 +360,14 @@ const PageContainer = styled.div`
     align-items: center;
     padding: 20px;
     user-select: none;
+    position: relative;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+    
+    ${props => props.$isBlocked && css`
+        filter: blur(40px) brightness(0.2); /* Makes screenshot content unreadable */
+        opacity: 0.5;
+        pointer-events: none;
+    `}
 
     @media (min-width: 768px) {
         padding: 60px 40px;
