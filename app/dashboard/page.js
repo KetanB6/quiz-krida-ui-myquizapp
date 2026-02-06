@@ -622,7 +622,13 @@ const UserDashboard = () => {
 
         if (minutes === 0) {
           toast.success("Quiz Deactivated!");
-        } else if (minutes > 0) {
+        }
+        // Check for the specific 24-hour case FIRST
+        else if (minutes === 1440) {
+          toast.success("Quiz Activated for 24 Hours.");
+        }
+        // Then check for any other positive minutes
+        else if (minutes > 0) {
           toast.success(`Quiz Activated for ${minutes} Minutes`);
         }
       }
