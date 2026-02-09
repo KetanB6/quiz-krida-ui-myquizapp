@@ -170,7 +170,7 @@ const Form = () => {
 
     return (
         <StyledWrapper $primary={primaryColor}>
-            <Toaster 
+            <Toaster
                 toastOptions={{
                     style: {
                         background: '#0a0a0a',
@@ -301,6 +301,9 @@ const Form = () => {
                                                             value={signupData.password}
                                                             onChange={(e) => { setSignupData({ ...signupData, password: e.target.value }); setSignupError(""); }}
                                                         />
+                                                        <button type="button" className="eye-btn" onClick={() => setShowPassword(!showPassword)}>
+                                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 <div className="input-group">
@@ -312,6 +315,9 @@ const Form = () => {
                                                             value={confirmPassword}
                                                             onChange={(e) => { setConfirmPassword(e.target.value); setSignupError(""); }}
                                                         />
+                                                        <button type="button" className="eye-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
