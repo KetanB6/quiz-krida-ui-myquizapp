@@ -2,7 +2,7 @@
 import React from 'react';
 import LandingPage from './component/LandingPage';
 import styled from 'styled-components';
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 /**
  * Main Entry Page
  * Optimized for Zolvi Monochrome Aesthetics
@@ -20,8 +20,9 @@ const PageWrapper = styled.main`
 `;
 
 const Page = () => {
-  return (
+  return (    
     <PageWrapper>
+      <SpeedInsights/>
       {/* SEO Tip: Adding a hidden H1 here if the LandingPage 
           doesn't have one helps search engines identify the 
           site's primary purpose immediately.
