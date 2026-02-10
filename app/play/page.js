@@ -483,7 +483,7 @@ const StatusTag = styled.div`
 `;
 
 const ZolviEntryCard = styled.div`
-    background: #000;
+    background: #1E1E1E;
     border: 1px solid #1a1a1a;
     padding: 24px;
     width: 100%;

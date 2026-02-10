@@ -332,7 +332,7 @@ const InfoItem = styled.div`
 const FormSection = styled.div` width: 100%; max-width: 500px; margin: 0 auto; `;
 
 const ZolviCard = styled.div` 
-    background: #000; border: 1px solid #1a1a1a; padding: 40px; 
+    background: #1E1E1E; border: 1px solid #1a1a1a; padding: 40px; 
     @media (max-width: 600px) { padding: 25px; }
 `;
 

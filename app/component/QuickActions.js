@@ -298,7 +298,7 @@ const BottomBorder = styled.div`
 
 const BrutalistCard = styled.div`
   position: relative;
-  background: #000;
+  background: #1E1E1E;
   padding: 80px 30px 30px;
   min-height: 350px;
   cursor: pointer;

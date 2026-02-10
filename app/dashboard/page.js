@@ -545,7 +545,7 @@ const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel, title }) => (
           </p>
           <div className="modal-actions">
             <button className="cancel-btn" onClick={onCancel}>CANCEL</button>
-            <button className="confirm-btn" onClick={onConfirm}>DELETE QUIZ</button>
+            <button className="confirm-btn" onClick={onConfirm}> DELETE QUIZ</button>
           </div>
         </ModalContent>
       </ModalOverlay>

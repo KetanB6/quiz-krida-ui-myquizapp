@@ -360,7 +360,7 @@ const ModalOverlay = styled(motion.div)`
 `;
 
 const ModalContent = styled(motion.div)`
-    background: #000;
+    background: #1E1E1E;
     border: 1px solid #222;
     width: 100%;
     max-width: 400px;
