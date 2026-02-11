@@ -305,7 +305,7 @@ const ScrollProgress = styled(motion.div)`
 const PageWrapper = styled.div`
     color: #fff;
     min-height: 100vh;
-    margin-top:-190px;
+    margin-top:-150px;
     width: 100%;
     font-family: 'Courier New', monospace;
     background: #000;

@@ -494,6 +494,7 @@ const Form = () => {
                                                     className="otp-input"
                                                     value={otpInput}
                                                     onChange={(e) => setOtpInput(e.target.value)}
+                                                    autoFocus
                                                 />
                                             </div>
                                             <button className="main-btn glow-btn" disabled={isSigningUp}>
