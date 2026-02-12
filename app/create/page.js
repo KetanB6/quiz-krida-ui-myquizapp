@@ -272,7 +272,7 @@ const CreatePage = () => {
                             {quizInfo.timeLimit && (
                                 <FormGroup>
                                     <label><Clock size={12} /> MINUTES PER QUESTION</label>
-                                    <input type="number" className="zolvi-input" value={quizInfo.questionPerMin} onChange={(e) => handleInfoChange('questionPerMin', e.target.value)} placeholder="e.g. 1" />
+                                    <input type="number" className="zolvi-input" value={quizInfo.questionPerMin || 1} onChange={(e) => handleInfoChange('questionPerMin', e.target.value)} placeholder="e.g. 1" />
                                 </FormGroup>
                             )}
 

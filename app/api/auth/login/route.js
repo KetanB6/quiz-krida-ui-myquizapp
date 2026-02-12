@@ -12,13 +12,13 @@ export async function POST(req) {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ message: "Invalid Email" }, { status: 401 });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ message: "Password Incorrect" }, { status: 401 });
     }
 
     // Generate JWT token with user ID

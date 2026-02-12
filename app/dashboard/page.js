@@ -870,41 +870,72 @@ const QuizGrid = styled.div`
 `;
 
 const StyledCard = styled(motion.div)`
-  background: #1E1E1E;  /* Already correct */
-  border: 4px solid #fff;  /* Already correct */
-  padding: 20px;
+  background: #1e1e1e;
+  border: 4px solid #fff;
+  padding: clamp(15px, 4vw, 25px); /* Fluid padding */
   position: relative;
   overflow: visible !important;
-  box-shadow: 4px 4px 0 #fff;  /* Already correct */
-  transition: transform 0.1s ease;
+  box-shadow: 4px 4px 0 #fff;
+  
+  /* --- Fix: Stability --- */
+  display: flex;
+  flex-direction: column;
+  min-height: 220px; /* Ensures all cards stay same height regardless of status */
+  width: 100%;
+  box-sizing: border-box;
+
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 
   &:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 10px 10px 0 #fff;  /* CHANGE: was #000 */
+    transform: translate(-4px, -4px);
+    box-shadow: 12px 12px 0 #fff;
   }
 
   .card-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 15px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    width: 100%;
   }
-  
+
   .icon-bg {
     padding: 8px;
-    background: #fff;  /* Already correct */
-    color: #000;  /* Already correct */
+    background: #fff;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Prevents icon from squishing */
   }
-  
+
   .quiz-title {
-    font-size: 1.3rem;
-    font-weight: 900;
-    margin-bottom: 15px;
+    font-size: clamp(1.1rem, 5vw, 1.4rem); /* Responsive font size */
+    font-weight: 950;
+    margin-bottom: auto; /* Pushes the next elements to the bottom */
     text-transform: uppercase;
-    letter-spacing: -1px;
-    color: #fff;  /* ADD THIS */
+    letter-spacing: -0.5px;
+    color: #fff;
+    line-height: 1.2;
+    word-break: break-word; /* Prevents long titles from breaking mobile layout */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limits title to 2 lines to keep cards uniform */
+    -webkit-box-orient: vertical;
+  }
+
+  /* --- Mobile Adjustments --- */
+  @media (max-width: 480px) {
+    border-width: 3px; /* Slightly thinner border for small screens */
+    min-height: 200px;
+    padding: 15px;
+    
+    &:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 #fff;
+    }
   }
 `;
-
 const ActionWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -939,23 +970,71 @@ const ActionWrapper = styled.div`
   }
 `;
 
-const StatusBadge = styled.button`
-  cursor: pointer;
-  background: ${props => props.$isActive ? '#dc3545' : '#28a745'}; #28a745 /* CHANGE: swap colors */
-  color: ${props => props.$isActive ? '#fff' : '#fff'};  /* CHANGE: swap colors */
-  border: 2px solid #fff;  /* CHANGE: was #000 */
+const pulse = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+`;
 
+const StatusBadge = styled.button`
+  /* --- Layout & Positioning --- */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 24px;
+  // margin-bottom: 35px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  
+  /* --- Typography --- */
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+
+  /* --- Dynamic Colors based on $isActive --- */
+  background: ${props => props.$isActive 
+    ? 'rgba(255, 0, 51, 0.05)'  // Dark Red glow
+    : 'rgba(0, 255, 65, 0.05)'  // Dark Green glow
+  };
+  
+  color: ${props => props.$isActive ? '#ff0033' : '#00ff41'};
+  
+  border: 1px solid ${props => props.$isActive 
+    ? 'rgba(255, 0, 51, 0.3)' 
+    : 'rgba(0, 255, 65, 0.3)'
+  };
+
+  /* --- Hover States (Brutalist Lift) --- */
   &:hover:not(:disabled) {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0 #fff;  /* CHANGE: was #000 */
+    transform: translateY(-3px);
+    background: ${props => props.$isActive 
+      ? 'rgba(255, 0, 51, 0.1)' 
+      : 'rgba(0, 255, 65, 0.1)'
+    };
+    border-color: ${props => props.$isActive ? '#ff0033' : '#00ff41'};
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 1;
     cursor: not-allowed;
+    filter: grayscale(1);
+  }
+
+  /* --- The Glowing Dot Component --- */
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${props => props.$isActive ? '#ff0033' : '#00ff41'};
+    box-shadow: 0 0 12px ${props => props.$isActive ? '#ff0033' : '#00ff41'};
+    animation: ${pulse} 2s ease-in-out infinite;
   }
 `;
-
 const MoreBtn = styled.button`
   background: #000;  /* CHANGE: was #fff */
   border: 2px solid #fff;  /* CHANGE: was #000 */
@@ -1053,16 +1132,31 @@ const SearchWrapper = styled.div`
     }
     
     .clear-btn {
-      background: #fff;  /* CHANGE: was #000 */
-      border: none;
-      color: #000;  /* CHANGE: was #fff */
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: 0.1s;
+  
+  background: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+  transition: all 0.3s;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    color: #fff;
+    transform: rotate(90deg);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
       
       &:hover {
         background: #000;  /* CHANGE: was #fff */

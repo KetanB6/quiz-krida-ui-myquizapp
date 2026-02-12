@@ -18,12 +18,17 @@ const geistMono = Geist_Mono({
 
 // --- ENHANCED SEO METADATA ---
 export const metadata = {
+  metadataBase: new URL('https://quizkrida.vercel.app'), // REQUIRED for OG images to work
   title: {
-    default: "Quizक्रिडा | Professional AI Quiz Engine",
-    template: "%s | Quizक्रिडा"
+    default: "Quizkrida | Professional AI Quiz Engine",
+    template: "%s | Quizkrida"
+  },
+  description: "Transform AI conversations into interactive, timed practice sessions. The ultimate monochrome quiz platform.",
+  alternates: {
+    canonical: '/',
   },
   description: "Transform AI conversations into interactive, timed practice sessions. The ultimate monochrome quiz platform for active learning.",
-  keywords: ["Quiz", "AI Quiz Generator", "Active Learning", "Exam Prep", "Zolvi Style", "Quizक्रिडा"],
+  keywords: ["Quizkrida", "AI Quiz Generator", "Active Learning", "Exam Prep", "Zolvi Style", "Quizक्रिडा"],
   authors: [{ name: "Quizक्रिडा Team" }],
   creator: "Quizक्रिडा",
   themeColor: "#000000", // Ensures mobile browser bars are black
@@ -31,7 +36,7 @@ export const metadata = {
   openGraph: {
     title: "Quizक्रिडा - Online Quiz Platform",
     description: "Generate and master any topic with our AI-driven quiz engine.",
-    url: "https://your-domain.com",
+    url: "https://quizkrida.vercel.app/",
     siteName: "Quizक्रिडा",
     images: [
       {
