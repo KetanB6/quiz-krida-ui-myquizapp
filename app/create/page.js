@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Trash2, ChevronLeft, ChevronRight, Save, Layout,
@@ -214,7 +214,7 @@ const CreatePage = () => {
 
             if (response.ok) {
                 toast.success("Quiz Published Successfully!");
-                window.location.href = "/dashboard";
+                router.push(`/dashboard`);
             }
         } catch (error) {
             toast.error("Error saving questions");
@@ -361,11 +361,58 @@ const CreatePage = () => {
 };
 
 /* --- STYLES --- */
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`;
+
+const ripple = keyframes`
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+`;
+const cardHover = css`
+  &:hover {
+    transform: translateY(-5px);
+    border-color: #fff;
+    box-shadow: 8px 8px 0 rgba(255, 255, 255, 0.1);
+    &::after { left: 100%; }
+  }
+`;
 const spin = keyframes` from { transform: rotate(0deg); } to { transform: rotate(360deg); } `;
-const PageWrapper = styled.div` min-height: 100vh; background: ${theme.bg}; color: ${theme.text}; padding: 40px 20px; font-family: ${theme.font}; `;
+const PageWrapper = styled.div` 
+  min-height: 100vh; 
+  background: ${props => props.theme.bg || '#000'}; 
+  color: ${props => props.theme.text || '#fff'}; 
+  padding: 40px 20px; 
+  font-family: ${props => props.theme.font || 'sans-serif'}; 
+`;
 const ContentHeader = styled.div` max-width: 600px; margin: 0 auto 30px; .status-tag { font-size: 10px; color: ${theme.muted}; letter-spacing: 2px; } h2 { font-size: 1.2rem; margin-top: 5px; letter-spacing: 1px; } `;
 const MainContainer = styled.div` max-width: 600px; margin: 0 auto; `;
-const SlideCard = styled(motion.div)` background: #1E1E1E;   border: 1px solid ${theme.border}; padding: 25px; display: flex; flex-direction: column; gap: 20px; `;
+const SlideCard = styled(motion.div)` 
+  background: #1E1E1E;  
+  border: 1px solid ${props => props.theme.border || '#333'}; 
+  padding: 25px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 20px; 
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+  /* Shimmer Glass Effect */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transition: left 0.7s ease;
+  }
+
+  ${cardHover}
+`;
 const FormGroup = styled.div` display: flex; flex-direction: column; gap: 8px; label { font-size: 10px; color: ${theme.muted}; display: flex; align-items: center; gap: 6px; } .zolvi-input, .zolvi-textarea { background: ${theme.bg}; border: 1px solid ${theme.border}; color: ${theme.text}; padding: 12px; font-size: 13px; &:focus { border-color: ${theme.borderActive}; outline: none; } } .zolvi-textarea { min-height: 100px; resize: none; } `;
 const AIControlBar = styled.div` 
     display: flex; 
@@ -373,9 +420,9 @@ const AIControlBar = styled.div`
     margin-bottom: 15px; 
     .ai-btn { 
         flex: 1;
-        background: ${theme.bg}; 
-        border: 1px dashed ${theme.border}; 
-        color: ${theme.text}; 
+        background: ${props => props.theme.bg || '#000'}; 
+        border: 1px dashed ${props => props.theme.border || '#444'}; 
+        color: ${props => props.theme.text || '#fff'}; 
         padding: 12px; 
         font-size: 9px; 
         font-weight: 900; 
@@ -385,17 +432,92 @@ const AIControlBar = styled.div`
         align-items: center; 
         justify-content: center; 
         gap: 8px; 
-        transition: 0.2s;
-        &:hover { border-color: ${theme.success}; color: ${theme.success}; } 
-        &.load-more:hover { border-color: ${theme.accent}; color: ${theme.accent}; }
-        .spin { animation: ${spin} 1s linear infinite; } 
+        transition: 0.3s;
+        text-transform: uppercase;
+
+        &:hover { 
+          border: 1px solid ${props => props.theme.success || '#00ff64'}; 
+          color: ${props => props.theme.success || '#00ff64'}; 
+          background: rgba(0, 255, 100, 0.05);
+          box-shadow: 0 0 15px rgba(0, 255, 100, 0.1);
+        } 
     } 
 `;
 const NavHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; .nav-icon-btn { background: transparent; border: 1px solid ${theme.border}; color: ${theme.muted}; padding: 8px; cursor: pointer; &:hover { color: ${theme.text}; border-color: ${theme.borderActive}; } } .slide-nav { display: flex; align-items: center; gap: 10px; .counter { font-size: 12px; font-weight: 900; } button { background: none; border: none; color: ${theme.text}; cursor: pointer; } } `;
 const OptionsMatrix = styled.div` display: flex; flex-direction: column; gap: 10px; `;
-const OptionNode = styled.div` display: flex; align-items: center; gap: 10px; background: ${theme.bg}; border: 1px solid ${theme.border}; padding: 10px; .node-prefix { font-size: 12px; font-weight: 900; color: ${theme.muted}; width: 20px; } .opt-input { flex: 1; background: none; border: none; color: ${theme.text}; font-size: 12px; outline: none; font-family: inherit; } `;
+const OptionNode = styled.div` 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  background: ${props => props.theme.bg || '#111'}; 
+  border: 1px solid ${props => props.theme.border || '#333'}; 
+  padding: 10px; 
+  transition: 0.3s;
+
+  &:hover {
+    border-color: ${props => props.theme.borderActive || '#fff'};
+    background: #1a1a1a;
+  }
+
+  .node-prefix { 
+    font-size: 12px; 
+    font-weight: 900; 
+    color: ${props => props.theme.muted || '#666'}; 
+    width: 20px; 
+  } 
+
+  .opt-input { 
+    flex: 1; 
+    background: none; 
+    border: none; 
+    color: ${props => props.theme.text || '#fff'}; 
+    font-size: 12px; 
+    outline: none; 
+    font-family: inherit; 
+  } 
+`;
 const BinaryToggle = styled.div` display: flex; gap: 5px; button { flex: 1; background: ${theme.bg}; border: 1px solid ${theme.border}; color: ${theme.muted}; padding: 8px; font-size: 10px; cursor: pointer; &.active { background: ${theme.text}; color: ${theme.bg}; border-color: ${theme.text}; } } `;
-const PrimaryBtn = styled.button` width: 100%; padding: 15px; background: ${theme.accent}; color: ${theme.bg}; border: none; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; &:disabled { opacity: 0.5; } .spin { animation: ${spin} 1s linear infinite; } `;
+const PrimaryBtn = styled.button` 
+  width: 100%; 
+  padding: 15px; 
+  background: ${props => props.theme.accent || '#fff'}; 
+  color: ${props => props.theme.bg || '#000'}; 
+  border: 2px solid transparent; 
+  font-weight: 900; 
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 10px; 
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &:hover:not(:disabled) {
+    background: #000;
+    color: #fff;
+    border-color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  }
+
+  /* Ripple/Pulse effect on click */
+  &:active:after {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ${ripple} 0.6s linear;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; } 
+  .spin { animation: ${spin} 1s linear infinite; } 
+`;
 const SecondaryBtn = styled.button` width: 100%; padding: 15px; background: transparent; border: 1px solid ${theme.border}; color: ${theme.text}; font-size: 12px; cursor: pointer; &:hover { background: #111; } `;
 const ActionArea = styled.div` display: flex; gap: 10px; margin-top: 20px; flex-direction: column; `;
 const DualGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 15px; `;

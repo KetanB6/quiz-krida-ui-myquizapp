@@ -5,6 +5,7 @@ import AppBackground from "./component/AppBackground";
 import StyledComponentsRegistry from './lib/registry';
 import { Toaster } from 'react-hot-toast';
 import GlobalGunCursor from "./component/GlobalGunCursor";
+import ScrollHandler from "./component/ScrollHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white selection:bg-white selection:text-black`}
       >
         <StyledComponentsRegistry>
+          <ScrollHandler />
           {/* AppBackground handles the monochrome noise/particles if you have them */}
           <AppBackground />
           <GlobalGunCursor />

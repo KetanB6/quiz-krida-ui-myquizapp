@@ -469,6 +469,7 @@ const EntryWrapper = styled.div`
     max-width: 440px;
     margin-top: 10vh;
     animation: ${fadeIn} 0.6s ease-out;
+    margin-top:-10px;
 `;
 
 const StatusTag = styled.div`
