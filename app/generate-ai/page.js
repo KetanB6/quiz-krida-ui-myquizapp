@@ -193,9 +193,9 @@ const AIGenerator = () => {
                     <ResultHeader>
                         <div className="title-area">
                             <div className={isSubmitted ? "score-badge high-alert" : "success-badge"}>
-                                {isSubmitted ? `FINAL_EVAL: ${score}/${quizData.length}` : `SYNC_TIMER: ${timeLeft}s`}
+                                {isSubmitted ? `TOTAL_SCORE: ${score}/${quizData.length}` : `TIMER: ${timeLeft}s`}
                             </div>
-                            <h2>{isSubmitted ? "EVALUATION_REPORT" : `PROCESSED_DOMAIN: ${formData.topic}`}</h2>
+                            <h2>{isSubmitted ? "RESULT" : `QUIZ_TITLE: ${formData.topic}`}</h2>
                         </div>
                         {isSubmitted && (
                             <GhostButton onClick={() => {
@@ -205,7 +205,7 @@ const AIGenerator = () => {
                                 setIsSubmitted(false);
                                 setScore(0);
                             }}>
-                                <RefreshCcw size={14} /> SYSTEM_REBOOT
+                                <RefreshCcw size={14} /> TAKE_ANOTHER_QUIZ
                             </GhostButton>
                         )}
                     </ResultHeader>
@@ -223,8 +223,7 @@ const AIGenerator = () => {
                                 return (
                                     <QuestionCard key={idx} $isSubmitted={isSubmitted}>
                                         <div className="card-header">
-                                            <div className="q-num">NODE_IDX: [0{idx + 1}]</div>
-                                            <div className="q-id">AUTH_ID: {Math.floor(Math.random() * 9000) + 1000}</div>
+                                            <div className="q-num">Q_NO: [0{idx + 1}]</div>
                                         </div>
                                         <h3>{q.question}</h3>
                                         <div className="options-list">
@@ -259,7 +258,7 @@ const AIGenerator = () => {
                     {!isSubmitted && (
                         <QuizFooter>
                             <SubmitButton onClick={handleNextQuestion}>
-                                {currentQuestionIdx === quizData.length - 1 ? "COMMIT_TO_MEMORY" : "ACCESS_NEXT_NODE"}
+                                {currentQuestionIdx === quizData.length - 1 ? "FINAL_SUBMIT" : "NEXT_QUESTION"}
                                 <ChevronRight size={18} />
                             </SubmitButton>
                         </QuizFooter>
@@ -779,6 +778,7 @@ const SubmitButton = styled(PrimaryButton)`
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
+  margin-top:-100px;
   clip-path: polygon(0 0, 95% 0, 100% 30%, 100% 100%, 5% 100%, 0 70%);
 
   @media (max-width: 767px) {
