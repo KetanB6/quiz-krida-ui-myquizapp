@@ -99,11 +99,11 @@ const CreatePage = () => {
         }
 
         if (quizInfo.timeLimit) {
-        const timeVal = parseInt(quizInfo.questionPerMin);
-        if (!quizInfo.questionPerMin || isNaN(timeVal) || timeVal <= 0) {
-            return toast.error("Please specify Minutes per question for the timer");
+            const timeVal = parseInt(quizInfo.questionPerMin);
+            if (!quizInfo.questionPerMin || isNaN(timeVal) || timeVal <= 0) {
+                return toast.error("Please specify Minute per question for the timer");
+            }
         }
-    }
 
         setLoading(true);
         const step1Payload = {
@@ -123,7 +123,8 @@ const CreatePage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'ngrok-skip-browser-warning': '69420'
+                    'ngrok-skip-browser-warning': '69420',
+                    'X-API-KEY': 'Haisenberg'
                 }, body: JSON.stringify(step1Payload)
             });
 
@@ -149,9 +150,12 @@ const CreatePage = () => {
         const toastId = toast.loading(isLoadMore ? "Fetching more questions..." : "AI is generating questions...");
 
         try {
-            const response = await fetch('https://quizbyapi.onrender.com/api/v1/Generate', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': 'Haisenberg'
+                },
                 body: JSON.stringify({
                     topic: quizInfo.quizTitle,
                     count: 10,
@@ -215,7 +219,10 @@ const CreatePage = () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Questions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': 'Haisenberg'
+                },
                 body: JSON.stringify(payload)
             });
 
@@ -223,7 +230,7 @@ const CreatePage = () => {
                 // 1. Success path
                 toast.success("Quiz Published Successfully!");
                 // We use router.replace to avoid back-button loops
-               window.location.href = `/dashboard`;
+                window.location.href = `/dashboard`;
             } else {
                 // 2. Handle server errors (e.g., 400, 500)
                 const errorData = await response.json().catch(() => ({}));

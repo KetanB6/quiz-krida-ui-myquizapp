@@ -88,7 +88,9 @@ const TopicQuizManager = () => {
     const fetchTopics = async () => {
       try {
         const response = await fetch(`${BASE_URL}/Topics`, {
-          headers: { 'ngrok-skip-browser-warning': 'true' },
+          headers: { 'ngrok-skip-browser-warning': 'true',
+              'X-API-KEY': 'Haisenberg'
+           },
         });
         const data = await response.json();
         setTopics(data);
@@ -105,7 +107,9 @@ const TopicQuizManager = () => {
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/Live/${id}`, {
-        headers: { 'ngrok-skip-browser-warning': 'true' },
+        headers: { 'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
+         },
       });
       const data = await res.json();
       setQuestions(data);

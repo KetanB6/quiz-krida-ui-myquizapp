@@ -96,9 +96,11 @@ const AIGenerator = () => {
             return;
         }
         try {
-            const response = await fetch('https://quizbyapi.onrender.com/api/v1/Generate', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json',
+                  'X-API-KEY': 'Haisenberg'
+                 },
                 body: JSON.stringify(formData)
             });
             const data = await response.json();

@@ -59,7 +59,7 @@ export async function DELETE(req) {
 
     // Delete the user from database
     await User.findByIdAndDelete(decoded.userId);
-
+    req.setHeader('Set-Cookie', 'token=; Path=/; HttpOnly; Max-Age=0; SameSite=Strict');
     return NextResponse.json(
       { 
         message: "Account deleted successfully",

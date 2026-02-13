@@ -59,7 +59,10 @@ const ResultModal = ({ quizId, onClose }) => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Result/${quizId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+          headers: {
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+            'X-API-KEY': 'Haisenberg'
+          }
         });
         if (response.ok) {
           const data = await response.json();
@@ -75,34 +78,34 @@ const ResultModal = ({ quizId, onClose }) => {
   }, [quizId]);
 
   const downloadPDF = async () => {
-  if (results.length === 0) return;
+    if (results.length === 0) return;
 
-  // 1. Generate and Save PDF (Same as before)
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text(`Quiz Results - ID: ${quizId}`, 14, 15);
+    // 1. Generate and Save PDF (Same as before)
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Quiz Results - ID: ${quizId}`, 14, 15);
 
-  const tableColumn = ["Student Name", "Score", "Total", "Percentage"];
-  const tableRows = results.map(res => [
-    res.name,
-    res.score,
-    res.outOf,
-    `${((res.score / res.outOf) * 100).toFixed(1)}%`
-  ]);
+    const tableColumn = ["Student Name", "Score", "Total", "Percentage"];
+    const tableRows = results.map(res => [
+      res.name,
+      res.score,
+      res.outOf,
+      `${((res.score / res.outOf) * 100).toFixed(1)}%`
+    ]);
 
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 20,
-    theme: 'grid',
-    headStyles: { fillColor: [0, 0, 0] }
-  });
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [0, 0, 0] }
+    });
 
-  doc.save(`Quiz_Result_${quizId}.pdf`);
+    doc.save(`Quiz_Result_${quizId}.pdf`);
 
-  // 2. NEW: Delete the data from the server so it can't be fetched again
-  
-};
+    // 2. NEW: Delete the data from the server so it can't be fetched again
+
+  };
 
   const handleDeleteResults = async () => {
     try {
@@ -110,7 +113,8 @@ const ResultModal = ({ quizId, onClose }) => {
         method: 'DELETE', // Change this to DELETE
         headers: {
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
+          'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
         }
       });
 
@@ -189,7 +193,10 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Preview/${quizId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+          headers: {
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+            'X-API-KEY': 'Haisenberg'
+          }
         });
         if (response.ok) {
           const data = await response.json();
@@ -292,7 +299,10 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Edit`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: {
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
+        },
         body: JSON.stringify(payload)
       });
       if (response.ok) {
@@ -407,7 +417,10 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
     const fetchQuestions = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Preview/${quizId}`, {
-          method: 'GET', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+          method: 'GET', headers: {
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+            'X-API-KEY': 'Haisenberg'
+          }
         });
         if (response.ok) { const data = await response.json(); setQuestions(data.questions || []); }
       } finally { setLoading(false); }
@@ -485,7 +498,10 @@ const LiveParticipantsModal = ({ quizId, onClose }) => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/LiveParticipants/${quizId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+          headers: {
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+            'X-API-KEY': 'Haisenberg'
+          }
         });
         if (response.ok) {
           const data = await response.json();
@@ -628,7 +644,10 @@ const UserDashboard = () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged?email=${email}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        headers: {
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
+        },
         cache: 'no-store'
       });
       if (response.ok) setQuizzes(await response.json());
@@ -647,7 +666,10 @@ const UserDashboard = () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/SwitchStatus/${quizId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+        headers: {
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
+        }
       });
 
       if (response.ok) {
@@ -678,7 +700,10 @@ const UserDashboard = () => {
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Delete/${quizId}`, {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+        method: 'DELETE', headers: {
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': 'Haisenberg'
+        }
       });
       if (response.ok) {
         setQuizzes(prev => prev.filter(q => q.quizId !== quizId));

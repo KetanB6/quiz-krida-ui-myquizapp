@@ -14,7 +14,9 @@ const PublicQuizzes = () => {
     const fetchQuizzes = async (isInitial = false) => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Public`, {
-                headers: { 'ngrok-skip-browser-warning': 'true' }
+                headers: { 'ngrok-skip-browser-warning': 'true',
+                    'X-API-KEY': 'Haisenberg'
+                 }
             });
             const data = await response.json();
             setQuizzes(Array.isArray(data) ? data : []);

@@ -88,8 +88,8 @@ const LandingPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.2 }}
                 >
-                    <Link href="/login" className="brutal-btn-primary">
-                        <span>START THE JOURNEY</span>
+                    <Link href="/play" className="brutal-btn-primary">
+                        <span>START THE Game</span>
                         <ArrowUpRight size={20} />
                     </Link>
                     <button className="brutal-btn-outline" onClick={scrollToFeatures}>

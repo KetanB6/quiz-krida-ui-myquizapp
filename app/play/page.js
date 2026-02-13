@@ -134,7 +134,9 @@ const PlayQuizContent = () => { // Renamed internal component
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Play/${joinData.quizId}/${joinData.participantName}`, {
                 method: 'GET',
-                headers: { 'ngrok-skip-browser-warning': '69420' },
+                headers: { 'ngrok-skip-browser-warning': '69420',
+                    'X-API-KEY': 'Haisenberg'
+                 },
             });
 
             if (!response.ok) throw new Error(`ACCESS DENIED: Quiz inactive.`);
@@ -195,7 +197,9 @@ const PlayQuizContent = () => { // Renamed internal component
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Play/Submit`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '69420' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '69420',
+                    'X-API-KEY': 'Haisenberg'
+                 },
                 body: JSON.stringify(finalSubmission)
             });
 

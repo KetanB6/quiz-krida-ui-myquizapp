@@ -269,7 +269,8 @@ const Form = () => {
                 method: 'DELETE', // Change this to DELETE
                 headers: {
                   'Content-Type': 'application/json',
-                  'ngrok-skip-browser-warning': 'true'
+                  'ngrok-skip-browser-warning': 'true',
+                  'X-API-KEY': 'Haisenberg'
                 }
               });
         
