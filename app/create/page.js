@@ -124,7 +124,7 @@ const CreatePage = () => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'ngrok-skip-browser-warning': '69420',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 }, body: JSON.stringify(step1Payload)
             });
 
@@ -154,7 +154,7 @@ const CreatePage = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 },
                 body: JSON.stringify({
                     topic: quizInfo.quizTitle,
@@ -221,7 +221,7 @@ const CreatePage = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 },
                 body: JSON.stringify(payload)
             });

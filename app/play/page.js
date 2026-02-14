@@ -155,7 +155,7 @@ const PlayQuizContent = () => { // Renamed internal component
                 method: 'GET',
                 headers: {
                     'ngrok-skip-browser-warning': '69420',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 },
             });
 
@@ -232,7 +232,7 @@ const PlayQuizContent = () => { // Renamed internal component
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '69420',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 },
                 body: JSON.stringify(finalSubmission)
             });

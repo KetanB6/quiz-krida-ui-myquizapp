@@ -4,66 +4,65 @@ import User from "@/models/UserQuiz";
 import bcrypt from "bcryptjs";
 import { otpStore } from "@/lib/otpMemory";
 import Session from "@/models/Session";
-import { apiRequest } from '@/lib/api';
 
 export async function POST(req) {
     try {
         await connectToDatabase();
-        const { userId, sessionId } = await req.json();
-        const { email, otpInput, newPassword } = await req.json();
 
-        const activeSession = await Session.findOne({ userId, sessionId });
+        // FIX: Combine both into ONE await req.json()
+        const { userId, sessionId, email, otpInput, newPassword } = await req.json();
 
-        if (!activeSession) {
-            // If the session was deleted (from password reset or account delete)
-            return NextResponse.json(
-                { message: "Logged out from all devices" }, 
-                { status: 401 }
-            );
+        // 1. Optional: Security check to see if requester is logged in
+        // Note: Usually, Reset Password is for users NOT logged in, 
+        // so you might not even need the 'activeSession' check here unless 
+        // this is an "Inside-App" password change.
+        if (userId && sessionId) {
+            const activeSession = await Session.findOne({ userId, sessionId });
+            if (!activeSession) {
+                return NextResponse.json({ message: "Session invalid" }, { status: 401 });
+            }
         }
-        // 1. Check if the OTP exists in our memory store
-        const record = otpStore[email];
 
+        // 2. Check if the OTP exists in memory
+        const record = otpStore[email];
         if (!record) {
             return NextResponse.json(
-                { success: false, message: "Session expired. Please request a new code." },
+                { success: false, message: "Session expired. Request a new code." },
                 { status: 400 }
             );
         }
 
-        // 2. Verify OTP and Expiry
-        const isOtpValid = record.otp === otpInput;
-        const isNotExpired = Date.now() < record.expires;
-
-        if (!isOtpValid) {
+        // 3. Verify OTP and Expiry
+        if (record.otp !== otpInput) {
             return NextResponse.json({ success: false, message: "Invalid code" }, { status: 400 });
         }
 
-        if (!isNotExpired) {
-            delete otpStore[email]; // Clean up expired data
+        if (Date.now() > record.expires) {
+            delete otpStore[email]; 
             return NextResponse.json({ success: false, message: "Code has expired" }, { status: 400 });
         }
 
-        // 3. Update the Database (MongoDB)
+        // 4. Update the User in MongoDB
         const user = await User.findOne({ email });
         if (!user) {
             return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
         }
 
-        // Hash the new password
         const salt = await bcrypt.genSalt(12);
         user.password = await bcrypt.hash(newPassword, salt);
-
         await user.save();
+
+        // 5. GLOBAL LOGOUT: Kill every active session for this user!
+        // This ensures the hacker (or old devices) are kicked out immediately.
         await Session.deleteMany({ userId: user._id });
-        // 4. Cleanup Memory (Crucial: Delete OTP so it can't be reused)
+
+        // 6. Cleanup Memory
         delete otpStore[email];
 
         return NextResponse.json({
             success: true,
-            message: "Password updated successfully!"
+            message: "Password updated and all devices logged out!"
         }, { status: 200 });
-
 
     } catch (error) {
         console.error("RESET_ERROR:", error);

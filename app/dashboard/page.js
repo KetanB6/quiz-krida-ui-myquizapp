@@ -61,7 +61,7 @@ const ResultModal = ({ quizId, onClose }) => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': 'Haisenberg'
+            'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
           }
         });
         if (response.ok) {
@@ -114,7 +114,7 @@ const ResultModal = ({ quizId, onClose }) => {
         headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
         }
       });
 
@@ -195,7 +195,7 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': 'Haisenberg'
+            'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
           }
         });
         if (response.ok) {
@@ -297,11 +297,12 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
     };
     console.log("Payload for save:", payload);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Edit`, {
+      const response = await fetch(`
+        `, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
         },
         body: JSON.stringify(payload)
       });
@@ -419,7 +420,7 @@ const FullQuizPreview = ({ quizId, onBack, primaryColor }) => {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Preview/${quizId}`, {
           method: 'GET', headers: {
             'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': 'Haisenberg'
+            'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
           }
         });
         if (response.ok) { const data = await response.json(); setQuestions(data.questions || []); }
@@ -500,7 +501,7 @@ const LiveParticipantsModal = ({ quizId, onClose }) => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-            'X-API-KEY': 'Haisenberg'
+            'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
           }
         });
         if (response.ok) {
@@ -646,7 +647,7 @@ const UserDashboard = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
         },
         cache: 'no-store'
       });
@@ -668,7 +669,7 @@ const UserDashboard = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
         }
       });
 
@@ -702,7 +703,7 @@ const UserDashboard = () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Logged/Delete/${quizId}`, {
         method: 'DELETE', headers: {
           'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
         }
       });
       if (response.ok) {

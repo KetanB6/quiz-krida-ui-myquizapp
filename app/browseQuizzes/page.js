@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Radio, Clock, ChevronRight, Loader2, CheckCircle2, 
-  Gamepad2, Music, Film, Tv, Book, Globe, Map, 
-  Zap, Beaker, Ghost, Car, PawPrint, Users, Palette, 
-  Landmark, Trophy, Cpu, Smartphone, Layout, BookOpen, Star, RefreshCcw 
+import {
+  Radio, Clock, ChevronRight, Loader2, CheckCircle2,
+  Gamepad2, Music, Film, Tv, Book, Globe, Map,
+  Zap, Beaker, Ghost, Car, PawPrint, Users, Palette,
+  Landmark, Trophy, Cpu, Smartphone, Layout, BookOpen, Star, RefreshCcw
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -83,14 +83,15 @@ const TopicQuizManager = () => {
   const [isFinished, setIsFinished] = useState(false);
 
   const BASE_URL = 'https://quizbyapi.onrender.com/api/v1';
-  
+
   useEffect(() => {
     const fetchTopics = async () => {
       try {
         const response = await fetch(`${BASE_URL}/Topics`, {
-          headers: { 'ngrok-skip-browser-warning': 'true',
-              'X-API-KEY': 'Haisenberg'
-           },
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+            'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
+          },
         });
         const data = await response.json();
         setTopics(data);
@@ -107,9 +108,10 @@ const TopicQuizManager = () => {
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/Live/${id}`, {
-        headers: { 'ngrok-skip-browser-warning': 'true',
-          'X-API-KEY': 'Haisenberg'
-         },
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+          'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
+        },
       });
       const data = await res.json();
       setQuestions(data);
@@ -140,7 +142,7 @@ const TopicQuizManager = () => {
     if (gameStarted && !isFinished && timer > 0) {
       interval = setInterval(() => setTimer(prev => prev - 1), 1000);
     } else if (timer === 0 && gameStarted && !isFinished) {
-      handleNext(); 
+      handleNext();
     }
     return () => clearInterval(interval);
   }, [timer, gameStarted, isFinished, currentIndex, questions.length]);
@@ -154,7 +156,7 @@ const TopicQuizManager = () => {
       } else {
         setIsFinished(true);
       }
-    }, 400); 
+    }, 400);
   };
 
   const calculateScore = () => {
@@ -184,20 +186,20 @@ const TopicQuizManager = () => {
     <>
       <GlobalStyles />
       <Container>
-        <Toaster 
+        <Toaster
           position="top-center"
-          toastOptions={{ 
-            style: { 
-              background: '#000', 
-              color: '#fff', 
-              border: '1px solid #222', 
+          toastOptions={{
+            style: {
+              background: '#000',
+              color: '#fff',
+              border: '1px solid #222',
               borderRadius: '0px',
               fontSize: '0.85rem',
               fontWeight: '700'
-            } 
-          }} 
+            }
+          }}
         />
-        
+
         {!gameStarted ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Header>
@@ -210,28 +212,28 @@ const TopicQuizManager = () => {
             <TopicGrid>
               {Object.entries(topics).map(([id, name], index) => (
                 <motion.div
-                    key={id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                  key={id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
                 >
-                    <TopicCard onClick={() => startTopicQuiz(id)}>
+                  <TopicCard onClick={() => startTopicQuiz(id)}>
                     <div className="topic-icon-box">
-                        {getTopicIcon(name)}
+                      {getTopicIcon(name)}
                     </div>
                     <div className="topic-info">
-                        <h3>{name.toUpperCase()}</h3>
-                        <span className="topic-id">SECTOR ID: {id}</span>
+                      <h3>{name.toUpperCase()}</h3>
+                      <span className="topic-id">SECTOR ID: {id}</span>
                     </div>
                     <ChevronRight size={18} className="arrow" />
-                    </TopicCard>
+                  </TopicCard>
                 </motion.div>
               ))}
             </TopicGrid>
           </motion.div>
         ) : isFinished ? (
-          <ResultCard 
-            initial={{ opacity: 0, scale: 0.9, y: 30 }} 
+          <ResultCard
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
           >
             <CheckCircle2 size={64} color="#fff" />
@@ -252,30 +254,30 @@ const TopicQuizManager = () => {
                 STATION {currentIndex + 1} // {questions.length}
               </div>
               <div className={`timer ${timer < 10 ? 'critical' : ''}`}>
-                <Clock size={14} /> 
+                <Clock size={14} />
                 <span className="timer-text">T-MINUS {timer}S</span>
               </div>
             </div>
             <ProgressBar>
-              <motion.div 
-                className="fill" 
+              <motion.div
+                className="fill"
                 initial={{ width: 0 }}
-                animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} 
+                animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
                 transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
               />
             </ProgressBar>
             <AnimatePresence mode="wait">
-              <QuestionBox 
-                key={currentIndex} 
-                initial={{ opacity: 0, x: 20 }} 
-                animate={{ opacity: 1, x: 0 }} 
+              <QuestionBox
+                key={currentIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
               >
                 <h2>{questions[currentIndex].question.toUpperCase()}</h2>
                 <OptionsGrid>
                   {['opt1', 'opt2', 'opt3', 'opt4'].map((optKey) => (
-                    <OptionBtn 
+                    <OptionBtn
                       key={optKey}
                       onClick={() => handleAnswer(questions[currentIndex][optKey])}
                       $selected={userAnswers[currentIndex] === questions[currentIndex][optKey]}

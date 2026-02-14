@@ -15,7 +15,7 @@ const PublicQuizzes = () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/Public`, {
                 headers: { 'ngrok-skip-browser-warning': 'true',
-                    'X-API-KEY': 'Haisenberg'
+                    'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                  }
             });
             const data = await response.json();

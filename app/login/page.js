@@ -270,7 +270,7 @@ const Form = () => {
                 headers: {
                   'Content-Type': 'application/json',
                   'ngrok-skip-browser-warning': 'true',
-                  'X-API-KEY': 'Haisenberg'
+                  'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY
                 }
               });
         

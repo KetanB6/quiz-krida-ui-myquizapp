@@ -137,7 +137,7 @@ const AIGenerator = () => {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-API-KEY': 'Haisenberg' // Your friend's key
+                'X-API-KEY': process.env.NEXT_PUBLIC_API_KEY // Your friend's key
             },
             body: JSON.stringify(formData)
         });
