@@ -806,12 +806,7 @@ const Form = () => {
                             >
                                 Sign In
                             </button>
-                            <div className="switch-wrapper">
-                                <label className="switch">
-                                    <input type="checkbox" checked={isFlipped} onChange={handleToggle} />
-                                    <span className="slider" />
-                                </label>
-                            </div>
+                           
                             <button 
                                 className={`toggle-option ${isFlipped ? "active" : ""}`} 
                                 onClick={() => setIsFlipped(true)}
