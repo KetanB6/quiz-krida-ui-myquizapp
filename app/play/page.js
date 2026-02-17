@@ -599,33 +599,97 @@ const QuizWrapper = styled.div`
 `;
 
 const QuizHeader = styled.div`
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     .top-meta {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
-        .q-count { font-size: 11px; font-weight: 800; color: #555; letter-spacing: 1px; }
+        margin-bottom: 20px;
+        gap: 12px;
+        .q-count { 
+            font-size: 11px; 
+            font-weight: 800; 
+            color: #666; 
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
         .status-pill {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
-            &.timer { border: 1px solid #222; color: #fff; }
-            &.score { background: #fff; color: #000; }
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 700;
+            transition: all 0.3s ease;
+            &.timer { 
+                border: 2px solid #fff;
+                color: #fff;
+                background: transparent;
+                box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+            }
+            &.score { 
+                background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+                color: #000;
+                box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+            }
         }
     }
-    h2 { font-size: 1.5rem; font-weight: 900; margin: 0; line-height: 1.2; text-transform: uppercase; }
+    h2 { 
+        font-size: 1.6rem; 
+        font-weight: 900; 
+        margin: 0; 
+        line-height: 1.3; 
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 `;
 
-const ProgressBarContainer = styled.div` width: 100%; height: 4px; background: #111; margin-bottom: 40px; `;
-const ProgressFill = styled.div` height: 100%; width: ${props => props.progress}%; background: #fff; transition: width 1s linear; `;
+const ProgressBarContainer = styled.div`
+    width: 100%;
+    height: 6px;
+    background: #1a1a1a;
+    margin-bottom: 40px;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+`;
+const ProgressFill = styled.div`
+    height: 100%;
+    width: ${props => props.progress}%;
+    background: linear-gradient(90deg, #fff 0%, #e0e0e0 100%);
+    transition: width 1s linear;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+`;
 
-const ContentArea = styled.div` margin-bottom: 40px; `;
+const ContentArea = styled.div`
+    margin-bottom: 40px;
+    animation: ${fadeIn} 0.4s ease-out;
+`;
 
 const QuestionCard = styled.div`
-    .q-label { font-size: 10px; font-weight: 800; color: #444; margin-bottom: 12px; }
-    h3 { font-size: 1.25rem; font-weight: 700; line-height: 1.5; margin-bottom: 30px; color: #efefef; }
-    border: ${props => props.$isSubmitted ? '1px solid #333' : '1px solid #222'};
-    ${props => props.isSubmitted && css`
+    .q-label { 
+        font-size: 10px; 
+        font-weight: 800; 
+        color: #666; 
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    h3 { 
+        font-size: 1.4rem; 
+        font-weight: 700; 
+        line-height: 1.6; 
+        margin-bottom: 40px; 
+        color: #fff;
+    }
+    padding: 32px;
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+    border: 1px solid #222;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+    ${props => props.$isSubmitted && css`
         margin-bottom: 60px;
         border-bottom: 1px solid #111;
         padding-bottom: 40px;
@@ -636,55 +700,91 @@ const QuestionCard = styled.div`
 const OptionsGrid = styled.div`
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
     @media (min-width: 600px) { grid-template-columns: 1fr 1fr; }
 `;
 
 const OptionButton = styled.div`
-    padding: 20px;
-    background: #0a0a0a;
-    border: 1px solid #1a1a1a;
+    padding: 20px 20px 20px 24px;
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+    border: 2px solid #222;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
-    .opt-indicator { width: 10px; height: 10px; border: 1px solid #333; transition: 0.2s; }
-    .opt-text { font-size: 14px; font-weight: 500; color: #888; flex: 1; }
+    .opt-indicator { 
+        width: 16px; 
+        height: 16px; 
+        border: 2px solid #444;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    .opt-text { 
+        font-size: 15px; 
+        font-weight: 500; 
+        color: #999; 
+        flex: 1; 
+        letter-spacing: 0.3px;
+    }
 
-    &:hover { border-color: #333; background: #0f0f0f; }
+    &:hover { 
+        border-color: #666;
+        background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        transform: translateY(-3px);
+        .opt-indicator { border-color: #888; box-shadow: 0 0 8px rgba(255, 255, 255, 0.1); }
+        .opt-text { color: #bbb; }
+    }
 
     ${props => props.variant === "selected" && css`
-        border-color: #fff; background: #111;
-        .opt-indicator { background: #fff; border-color: #fff; }
-        .opt-text { color: #fff; }
+        border-color: #fff;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+        .opt-indicator { 
+            background: #fff; 
+            border-color: #fff;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+        }
+        .opt-text { color: #fff; font-weight: 600; }
     `}
 
     ${props => props.variant === "correct" && css`
-        border-color: #fff; background: #000;
-        .opt-indicator { background: #fff; border-color: #fff; }
+        border-color: #4ade80;
+        background: linear-gradient(135deg, #0f3f0f 0%, #1a5a1a 100%);
+        .opt-indicator { 
+            background: #4ade80;
+            border-color: #4ade80;
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+        }
         .opt-text { color: #fff; font-weight: 700; }
-        .res-icon { color: #fff; }
+        .res-icon { color: #4ade80; }
     `}
 
     ${props => props.variant === "wrong" && css`
-        border-color: #331111; opacity: 0.6;
-        .opt-text { color: #555; }
-        .res-icon { color: #ff4444; }
+        border-color: #ff5555;
+        opacity: 0.7;
+        background: linear-gradient(135deg, #3f0f0f 0%, #5a1a1a 100%);
+        .opt-text { color: #f0a0a0; }
+        .res-icon { color: #ff6666; }
     `}
 `;
 
 const FooterActions = styled.div`
     display: flex;
     justify-content: center;
-    padding-top: 20px;
+    padding-top: 30px;
+    animation: ${fadeIn} 0.5s ease-out;
 `;
 
 const PrimaryButton = styled.button`
     width: 100%;
-    background: #fff;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
     color: #000;
     border: none;
     padding: 18px 40px;
@@ -695,8 +795,15 @@ const PrimaryButton = styled.button`
     align-items: center;
     justify-content: center;
     gap: 12px;
-    transition: 0.3s;
-    &:hover { background: #e0e0e0; transform: translateY(-2px); }
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+    &:hover { 
+        background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(255, 255, 255, 0.2);
+    }
+    &:active { transform: translateY(-1px); }
 `;
 
 const SecondaryButton = styled.button`

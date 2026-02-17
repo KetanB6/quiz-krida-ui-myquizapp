@@ -344,7 +344,7 @@ const EditQuizModule = ({ quizId, onBack, primaryColor, userEmail }) => {
         toast.success("Quiz updated successfully!");
         onBack();
       } else {
-        toast.error("Server error. Please check all fields.");
+        toast.error("Server error. Please check all fields or quiz is active.");
       }
     } catch (err) {
       toast.error("Network error");
@@ -1428,6 +1428,51 @@ const ModalContent = styled(motion.div)`
     font-weight: 700;
     text-transform: uppercase;
   }
+
+  @media (max-width: 400px) {
+    max-width: 95vw;
+    padding: 16px;
+    border: 3px solid #fff;
+    box-shadow: 6px 6px 0 #fff;
+
+    h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      letter-spacing: 0px;
+    }
+
+    p {
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      gap: 8px;
+      flex-wrap: wrap;
+
+      button {
+        padding: 10px 12px;
+        font-size: 0.7rem;
+      }
+    }
+
+    .modal-header {
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+
+      h2 {
+        font-size: 1rem;
+      }
+
+      button {
+        padding: 0;
+      }
+    }
+
+    .loading-center {
+      padding: 24px;
+    }
+  }
 `;
 
 const ResultTable = styled.table`
@@ -1636,13 +1681,18 @@ const EditLayout = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px 60px;
+
+  @media (max-width: 400px) {
+    gap: 20px;
+    padding: 0 12px 40px;
+  }
 `;
 
 const ConfigCard = styled.div`
-  background: #000;  /* CHANGE: was #fff */
-  border: 4px solid #fff;  /* CHANGE: was #000 */
+  background: #000;
+  border: 4px solid #fff;
   padding: 32px;
-  box-shadow: 8px 8px 0 #fff;  /* CHANGE: was #000 */
+  box-shadow: 8px 8px 0 #fff;
 
   h3 {
     font-size: 1.1rem;
@@ -1650,9 +1700,9 @@ const ConfigCard = styled.div`
     margin-bottom: 24px;
     text-transform: uppercase;
     letter-spacing: -1px;
-    border-bottom: 2px solid #fff;  /* CHANGE: was #000 */
+    border-bottom: 2px solid #fff;
     padding-bottom: 10px;
-    color: #fff;  /* ADD THIS */
+    color: #fff;
   }
 
   .form-grid {
@@ -1664,6 +1714,10 @@ const ConfigCard = styled.div`
       grid-template-columns: 1fr;
     }
 
+    @media (max-width: 400px) {
+      gap: 16px;
+    }
+
     .field {
       display: flex;
       flex-direction: column;
@@ -1673,21 +1727,32 @@ const ConfigCard = styled.div`
         font-size: 0.85rem;
         font-weight: 900;
         text-transform: uppercase;
-        color: #fff;  /* ADD THIS */
+        color: #fff;
       }
 
-      input {
-        background: #000;  /* CHANGE: was #fff */
-        border: 2px solid #fff;  /* CHANGE: was #000 */
+      input, select {
+        background: #000;
+        border: 2px solid #fff;
         padding: 14px 18px;
-        color: #fff;  /* CHANGE: was #000 */
+        color: #fff;
         font-size: 1rem;
         font-family: 'Courier New', monospace;
         font-weight: 700;
 
+        @media (max-width: 400px) {
+          padding: 10px 8px;
+          font-size: 0.85rem;
+        }
+
         &:focus {
           outline: none;
-          box-shadow: 4px 4px 0 #fff;  /* CHANGE: was #000 */
+          box-shadow: 4px 4px 0 #fff;
+        }
+      }
+
+      select {
+        @media (max-width: 400px) {
+          padding: 8px 6px;
         }
       }
     }
@@ -1700,7 +1765,7 @@ const EditHeaderSection = styled.div`
   align-items: center;
   padding: 30px 20px;
   gap: 20px;
-  border-bottom: 4px solid #fff;  /* CHANGE: was #000 */
+  border-bottom: 4px solid #fff;
   margin-bottom: 30px;
 
   .left {
@@ -1714,7 +1779,7 @@ const EditHeaderSection = styled.div`
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: -2px;
-    color: #fff;  /* ADD THIS */
+    color: #fff;
   }
 
   .action-btns {
@@ -1726,6 +1791,31 @@ const EditHeaderSection = styled.div`
     flex-direction: column;
     align-items: flex-start;
     .action-btns { width: 100%; justify-content: space-between; }
+  }
+
+  @media (max-width: 400px) {
+    padding: 12px 10px;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-direction: column;
+
+    .left {
+      gap: 10px;
+      width: 100%;
+      flex-direction: column-reverse;
+    }
+
+    .edit-title {
+      font-size: 1rem;
+      letter-spacing: 0px;
+      word-break: break-word;
+    }
+
+    .action-btns {
+      width: 100%;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
   }
 `;
 
@@ -1752,6 +1842,17 @@ const SaveBtn = styled(motion.button)`
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  @media (max-width: 400px) {
+    padding: 10px 12px;
+    font-size: 0.7rem;
+    gap: 6px;
+    
+    &:hover:not(:disabled) {
+      transform: none;
+      box-shadow: none;
+    }
+  }
 `;
 
 const AddQuestionBtn = styled.button`
@@ -1773,6 +1874,12 @@ const AddQuestionBtn = styled.button`
     color: #000;  /* CHANGE: was #fff */
     border-style: solid;
   }
+
+  @media (max-width: 400px) {
+    padding: 10px 12px;
+    font-size: 0.7rem;
+    gap: 6px;
+  }
 `;
 
 const BackButton = styled.button`
@@ -1793,6 +1900,12 @@ const BackButton = styled.button`
     background: #fff;  /* CHANGE: was #000 */
     color: #000;  /* CHANGE: was #fff */
   }
+
+  @media (max-width: 400px) {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
 `;
 
 const DeleteSmallBtn = styled.button`
@@ -1811,6 +1924,12 @@ const DeleteSmallBtn = styled.button`
     background: #fff;  /* CHANGE: was #000 */
     color: #000;  /* CHANGE: was #fff */
     transform: rotate(90deg);
+  }
+
+  @media (max-width: 400px) {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
   }
 `;
 
@@ -2004,6 +2123,64 @@ const QuestionEditBox = styled.div`
       }
     }
   }
+
+  @media (max-width: 400px) {
+    padding: 12px;
+    border: 3px solid #fff;
+    box-shadow: 4px 4px 0 #fff;
+    margin-bottom: 12px;
+
+    .q-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .correct-select {
+      width: 100%;
+      gap: 6px;
+      font-size: 0.8rem;
+
+      select {
+        padding: 4px 6px;
+        font-size: 0.8rem;
+      }
+    }
+
+    .q-input {
+      padding: 10px 8px;
+      font-size: 0.85rem;
+      min-height: 70px;
+      margin-bottom: 12px;
+    }
+
+    .options-grid-edit {
+      gap: 8px;
+
+      @media (min-width: 640px) {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .opt-field {
+        gap: 6px;
+        padding: 8px;
+        flex-direction: column;
+        align-items: flex-start;
+
+        .opt-label {
+          font-size: 0.78rem;
+        }
+
+        input {
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
 `;
+
+
 
 export default UserDashboard;
